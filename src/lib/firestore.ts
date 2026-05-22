@@ -19,6 +19,40 @@ import { db } from "./firebase";
 export type BotStatus = "live" | "beta" | "soon";
 export type RiskLevel = "Low" | "Medium" | "High";
 export type PlanTier = "starter" | "pro" | "institutional";
+export type TradingPlatform = "MT4" | "MT5";
+
+/** Verified backtest evidence (Strategy Tester / third-party reports). */
+export type BacktestProof = {
+  period: string;
+  platform: TradingPlatform;
+  broker: string;
+  timeframe: string;
+  initialDeposit: string;
+  imageKeys: string[];
+  reportKey?: string;
+  notes?: string;
+};
+
+/** Verified live / forward-test evidence (real account screenshots). */
+export type LiveProof = {
+  runningSince: string;
+  platform: TradingPlatform;
+  broker: string;
+  accountType: string;
+  imageKeys: string[];
+  reportKey?: string;
+  notes?: string;
+};
+
+export type BotProof = {
+  backtest?: BacktestProof | null;
+  live?: LiveProof | null;
+};
+
+export const EMPTY_BOT_PROOF: BotProof = {
+  backtest: null,
+  live: null,
+};
 
 export type BotDoc = {
   id: string;
@@ -37,6 +71,7 @@ export type BotDoc = {
   minDeposit: string;
   imageKey: string;   // R2 object key for thumbnail
   fileKey: string;    // R2 object key for EA file (.ex4/.ex5)
+  proof?: BotProof;
   createdAt: Date;
   updatedAt: Date;
 };

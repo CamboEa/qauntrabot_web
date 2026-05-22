@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Download } from "lucide-react";
+import { ArrowRight, Download, ShieldCheck } from "lucide-react";
 import { getAllBots, type BotDoc, type BotStatus } from "@/lib/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
@@ -241,9 +241,21 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-data">
+                  <div className="flex items-center flex-wrap gap-2 text-xs font-data">
                     <span className="px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{bot.assetTag}</span>
                     <span className={`font-semibold ${RISK_COLOR[bot.risk]}`}>{bot.risk} Risk</span>
+                    {bot.proof?.backtest && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-profit/8 text-profit border border-profit/20">
+                        <ShieldCheck size={12} />
+                        Backtest verified
+                      </span>
+                    )}
+                    {bot.proof?.live && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/5 text-primary border border-primary/15">
+                        <ShieldCheck size={12} />
+                        Live verified
+                      </span>
+                    )}
                   </div>
 
                   {isActive ? (

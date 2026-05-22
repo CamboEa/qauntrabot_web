@@ -27,7 +27,7 @@ export default function TradingChart() {
     <div className="relative w-full overflow-hidden bg-card">
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
         <div className="flex items-center gap-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-profit" />
+          <span className="w-1.5 h-1.5 rounded-full bg-profit hero-live-dot" />
           <span className="text-xs text-muted-foreground font-data uppercase tracking-wide">
             XAUUSD — Equity Curve
           </span>
@@ -35,7 +35,7 @@ export default function TradingChart() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-data">12M</span>
-          <span className="text-[0.65rem] border border-profit/30 text-profit rounded-full px-2 py-0.5 font-data">
+          <span className="text-[0.65rem] border border-profit/30 text-profit rounded-full px-2 py-0.5 font-data hero-live-badge">
             LIVE
           </span>
         </div>
@@ -67,7 +67,11 @@ export default function TradingChart() {
             <line key={x} x1={x} y1="0" x2={x} y2="170" stroke="rgba(11,31,61,0.06)" strokeWidth="1" />
           ))}
 
-          <path d={buildFillPath(EQUITY_POINTS)} fill="url(#equityFill)" />
+          <path
+            d={buildFillPath(EQUITY_POINTS)}
+            fill="url(#equityFill)"
+            className="hero-chart-fill"
+          />
           <path
             d={buildPath(EQUITY_POINTS)}
             fill="none"
@@ -75,13 +79,19 @@ export default function TradingChart() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            pathLength={1}
+            className="hero-chart-line"
           />
 
-          {BUY_MARKERS.map((x) => {
+          {BUY_MARKERS.map((x, i) => {
             const pt = EQUITY_POINTS.find((p) => p[0] === x);
             const y = pt ? pt[1] : 100;
             return (
-              <g key={`buy-${x}`}>
+              <g
+                key={`buy-${x}`}
+                className="hero-chart-marker"
+                style={{ animationDelay: `${1.65 + i * 0.12}s` }}
+              >
                 <polygon
                   points={`${x},${y + 14} ${x - 4},${y + 21} ${x + 4},${y + 21}`}
                   fill="#1A7F5A"
@@ -91,11 +101,15 @@ export default function TradingChart() {
             );
           })}
 
-          {SELL_MARKERS.map((x) => {
+          {SELL_MARKERS.map((x, i) => {
             const pt = EQUITY_POINTS.find((p) => p[0] === x);
             const y = pt ? pt[1] : 100;
             return (
-              <g key={`sell-${x}`}>
+              <g
+                key={`sell-${x}`}
+                className="hero-chart-marker"
+                style={{ animationDelay: `${2.05 + i * 0.12}s` }}
+              >
                 <polygon
                   points={`${x},${y - 14} ${x - 4},${y - 21} ${x + 4},${y - 21}`}
                   fill="#C23B3B"
@@ -105,8 +119,8 @@ export default function TradingChart() {
             );
           })}
 
-          <circle cx="400" cy="24" r="3" fill="#1A7F5A" />
-          <circle cx="400" cy="24" r="7" fill="#1A7F5A" opacity="0.15" />
+          <circle cx="400" cy="24" r="3" fill="#1A7F5A" className="hero-chart-endpoint" />
+          <circle cx="400" cy="24" r="7" fill="#1A7F5A" opacity="0.15" className="hero-chart-fill" style={{ animationDelay: "2.4s" }} />
         </svg>
 
         <div className="absolute left-1 top-2 bottom-2 flex flex-col justify-between pointer-events-none">

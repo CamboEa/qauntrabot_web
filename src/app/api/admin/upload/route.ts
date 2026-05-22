@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
     let key: string;
     let contentType: string;
 
+    const index = Number(form.get("index") ?? "0");
+    const filename = file.name || "file";
+
     switch (type) {
       case "bot-image":
         key = r2Keys.botImage(id);
@@ -31,6 +34,22 @@ export async function POST(req: NextRequest) {
       case "bot-file":
         key = r2Keys.botFile(id, platform);
         contentType = "application/octet-stream";
+        break;
+      case "proof-backtest-image":
+        key = r2Keys.proofBacktestImage(id, index, filename);
+        contentType = file.type || "image/png";
+        break;
+      case "proof-backtest-report":
+        key = r2Keys.proofBacktestReport(id, filename);
+        contentType = file.type || "application/pdf";
+        break;
+      case "proof-live-image":
+        key = r2Keys.proofLiveImage(id, index, filename);
+        contentType = file.type || "image/png";
+        break;
+      case "proof-live-report":
+        key = r2Keys.proofLiveReport(id, filename);
+        contentType = file.type || "application/pdf";
         break;
       default:
         return NextResponse.json({ error: "Invalid upload type" }, { status: 400 });

@@ -60,9 +60,22 @@ export async function objectExists(key: string): Promise<boolean> {
 
 // ─── Key helpers ──────────────────────────────────────────────────────────────
 
+function extFromFilename(name: string, fallback: string): string {
+  const m = name.match(/\.([a-z0-9]+)$/i);
+  return m ? m[1].toLowerCase() : fallback;
+}
+
 export const r2Keys = {
   botImage: (botId: string) => `bots/images/${botId}.webp`,
   botFile: (botId: string, platform: "MT4" | "MT5") =>
     `bots/files/${botId}-${platform.toLowerCase()}.ex${platform === "MT5" ? "5" : "4"}`,
+  proofBacktestImage: (botId: string, index: number, filename: string) =>
+    `bots/${botId}/proof/backtest/img-${index}.${extFromFilename(filename, "png")}`,
+  proofBacktestReport: (botId: string, filename: string) =>
+    `bots/${botId}/proof/backtest/report.${extFromFilename(filename, "pdf")}`,
+  proofLiveImage: (botId: string, index: number, filename: string) =>
+    `bots/${botId}/proof/live/img-${index}.${extFromFilename(filename, "png")}`,
+  proofLiveReport: (botId: string, filename: string) =>
+    `bots/${botId}/proof/live/report.${extFromFilename(filename, "pdf")}`,
   userAvatar: (uid: string) => `users/avatars/${uid}.webp`,
 };

@@ -52,11 +52,97 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --animate-ticker: ticker 40s linear infinite;
+  --animate-hero-float: hero-float 9s ease-in-out infinite;
+  --animate-hero-ring: hero-ring-breathe 14s ease-in-out infinite;
+  --animate-hero-live: hero-live-pulse 2.4s ease-in-out infinite;
+  --animate-hero-dot: hero-dot-pulse 2s ease-in-out infinite;
 }
 
 @keyframes ticker {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-10px, 14px); }
+}
+
+@keyframes hero-ring-breathe {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-8px, 12px) scale(1.03);
+    opacity: 0.75;
+  }
+}
+
+@keyframes hero-chart-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes hero-chart-fill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hero-marker-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hero-stat-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-live-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--profit) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+@keyframes hero-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(1.35); }
+}
+
+@keyframes hero-endpoint-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 :root {
@@ -422,6 +508,63 @@
       radial-gradient(circle at 85% 60%, color-mix(in srgb, var(--primary) 4%, transparent) 0%, transparent 45%);
   }
 
+  /* Hero entrance & chart motion */
+  .hero-enter {
+    opacity: 0;
+    animation: hero-fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .hero-card-enter {
+    opacity: 0;
+    animation: hero-card-enter 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .hero-d-0 { animation-delay: 0.05s; }
+  .hero-d-1 { animation-delay: 0.18s; }
+  .hero-d-2 { animation-delay: 0.32s; }
+  .hero-d-3 { animation-delay: 0.46s; }
+  .hero-d-4 { animation-delay: 0.58s; }
+  .hero-d-5 { animation-delay: 0.7s; }
+  .hero-d-6 { animation-delay: 0.82s; }
+  .hero-d-7 { animation-delay: 0.94s; }
+  .hero-d-8 { animation-delay: 1.06s; }
+  .hero-d-9 { animation-delay: 1.18s; }
+  .hero-d-10 { animation-delay: 1.3s; }
+  .hero-d-chart { animation-delay: 0.35s; }
+  .hero-ring-float {
+    animation: hero-ring-breathe 14s ease-in-out infinite;
+  }
+  .hero-accent-in {
+    display: inline-block;
+    opacity: 0;
+    animation: hero-fade-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.22s forwards;
+  }
+  .hero-stat-in {
+    opacity: 0;
+    animation: hero-stat-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .hero-chart-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: hero-chart-draw 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+  }
+  .hero-chart-fill {
+    opacity: 0;
+    animation: hero-chart-fill 1.2s ease-out 1.35s forwards;
+  }
+  .hero-chart-marker {
+    opacity: 0;
+    animation: hero-marker-in 0.45s ease-out forwards;
+  }
+  .hero-chart-endpoint {
+    animation: hero-endpoint-pulse 2.5s ease-in-out 2.2s infinite;
+  }
+  .hero-live-badge {
+    animation: hero-live-pulse 2.4s ease-in-out infinite;
+  }
+  .hero-live-dot {
+    animation: hero-dot-pulse 2s ease-in-out infinite;
+    transform-origin: center;
+  }
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -461,7 +604,25 @@
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .animate-pulse,
-    .animate-ticker { animation: none; }
+    .animate-ticker,
+    .hero-enter,
+    .hero-card-enter,
+    .hero-accent-in,
+    .hero-stat-in,
+    .hero-ring-float,
+    .hero-chart-line,
+    .hero-chart-fill,
+    .hero-chart-marker,
+    .hero-chart-endpoint,
+    .hero-live-badge,
+    .hero-live-dot { animation: none; }
+    .hero-enter,
+    .hero-card-enter,
+    .hero-accent-in,
+    .hero-stat-in,
+    .hero-chart-fill,
+    .hero-chart-marker { opacity: 1; }
+    .hero-chart-line { stroke-dashoffset: 0; }
     .card-surface-hover:hover { transform: none; }
     .btn-primary-brand:active { transform: none; }
   }
