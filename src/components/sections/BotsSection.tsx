@@ -2,153 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight, Download, ShieldCheck } from "lucide-react";
-import { getAllBots, type BotDoc, type BotStatus } from "@/lib/firestore";
+import { getAllBots, type BotDoc } from "@/lib/firestore";
+import { FALLBACK_BOTS } from "@/lib/fallback-bots";
+import { BOT_RISK_COLOR, BOT_STATUS_CONFIG } from "@/lib/bot-display";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
-
-const STATIC_BOTS: BotDoc[] = [
-  {
-    id: "xauusd-grid",
-    name: "XAUUSD Grid",
-    subtitle: "Gold Grid System",
-    asset: "XAUUSD",
-    assetTag: "Gold",
-    status: "live",
-    risk: "Medium",
-    gain: "+247.3%",
-    drawdown: "12.4%",
-    winRate: "73.2%",
-    trades: "847",
-    description: "Grid-based strategy on Gold with dynamic lot sizing. Profits from price oscillations within defined ranges.",
-    pairs: ["XAUUSD"],
-    minDeposit: "$500",
-    imageKey: "",
-    fileKey: "bots/files/xauusd-grid-mt5.ex5",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "forex-scalper",
-    name: "Forex Scalper",
-    subtitle: "Major Pairs Scalper",
-    asset: "EURUSD · GBPUSD",
-    assetTag: "Majors",
-    status: "live",
-    risk: "Low",
-    gain: "+158.9%",
-    drawdown: "8.7%",
-    winRate: "68.5%",
-    trades: "1,342",
-    description: "High-frequency scalping on major forex pairs during London and New York sessions.",
-    pairs: ["EURUSD", "GBPUSD", "USDJPY"],
-    minDeposit: "$300",
-    imageKey: "",
-    fileKey: "bots/files/forex-scalper-mt5.ex5",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "multi-asset",
-    name: "Multi-Asset",
-    subtitle: "Diversified Portfolio",
-    asset: "Gold · Forex · CFDs",
-    assetTag: "Portfolio",
-    status: "live",
-    risk: "High",
-    gain: "+312.6%",
-    drawdown: "15.1%",
-    winRate: "71.8%",
-    trades: "623",
-    description: "Runs all strategy modules across correlated and uncorrelated instruments with portfolio-level drawdown controls.",
-    pairs: ["XAUUSD", "EURUSD", "NASDAQ", "BTCUSD"],
-    minDeposit: "$1,000",
-    imageKey: "",
-    fileKey: "bots/files/multi-asset-mt5.ex5",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "index-momentum",
-    name: "Index Momentum",
-    subtitle: "US & EU Indices",
-    asset: "NASDAQ · SP500",
-    assetTag: "Indices",
-    status: "beta",
-    risk: "Medium",
-    gain: "+94.1%",
-    drawdown: "11.2%",
-    winRate: "65.4%",
-    trades: "312",
-    description: "Trend-following on equity indices with momentum signals and session-based filters.",
-    pairs: ["NAS100", "SPX500", "GER40"],
-    minDeposit: "$500",
-    imageKey: "",
-    fileKey: "bots/files/index-momentum-mt5.ex5",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "crypto-cfd",
-    name: "Crypto CFD",
-    subtitle: "Digital Asset Strategy",
-    asset: "BTC · ETH · SOL",
-    assetTag: "Crypto",
-    status: "soon",
-    risk: "High",
-    gain: "—",
-    drawdown: "—",
-    winRate: "—",
-    trades: "—",
-    description: "Volatility-adaptive strategy for crypto CFDs with momentum and mean-reversion techniques.",
-    pairs: ["BTCUSD", "ETHUSD", "SOLUSD"],
-    minDeposit: "$500",
-    imageKey: "",
-    fileKey: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "news-event",
-    name: "News Event",
-    subtitle: "High-Impact Releases",
-    asset: "Multi-Asset",
-    assetTag: "Event-Driven",
-    status: "soon",
-    risk: "High",
-    gain: "—",
-    drawdown: "—",
-    winRate: "—",
-    trades: "—",
-    description: "Positions ahead of high-impact economic releases with rapid entry and trailing exits.",
-    pairs: ["EURUSD", "XAUUSD", "USDJPY"],
-    minDeposit: "$1,000",
-    imageKey: "",
-    fileKey: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const STATUS_CONFIG: Record<BotStatus, { label: string; dot: string; text: string; border: string; bg: string }> = {
-  live: { label: "Live", dot: "bg-profit", text: "text-profit", border: "border-profit/25", bg: "bg-profit/8" },
-  beta: { label: "Beta", dot: "bg-warning", text: "text-warning", border: "border-warning/25", bg: "bg-warning/8" },
-  soon: { label: "Soon", dot: "bg-muted-foreground", text: "text-muted-foreground", border: "border-border", bg: "bg-secondary" },
-};
-
-const RISK_COLOR: Record<string, string> = {
-  Low: "text-profit",
-  Medium: "text-warning",
-  High: "text-loss",
-};
 
 type Filter = "all" | "live" | "beta" | "soon";
 
 export default function BotsSection({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuth();
   const [filter, setFilter] = useState<Filter>("all");
-  const [bots, setBots] = useState<BotDoc[]>(STATIC_BOTS);
+  const [bots, setBots] = useState<BotDoc[]>(FALLBACK_BOTS);
   const [loadingBots, setLoadingBots] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
@@ -161,7 +27,9 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
 
   const filtered = filter === "all" ? bots : bots.filter((b) => b.status === filter);
 
-  const handleDownload = async (bot: BotDoc) => {
+  const handleDownload = async (e: React.MouseEvent, bot: BotDoc) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!bot.fileKey) return;
     setDownloadingId(bot.id);
     try {
@@ -221,18 +89,22 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
         {!loadingBots && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 grid-site">
             {filtered.map((bot) => {
-              const st = STATUS_CONFIG[bot.status];
+              const st = BOT_STATUS_CONFIG[bot.status];
               const isActive = bot.status !== "soon";
               const isDownloading = downloadingId === bot.id;
+              const detailHref = `/bots/${bot.id}`;
 
               return (
-                <article
+                <Link
                   key={bot.id}
-                  className={`card-surface-hover flex flex-col card-pad h-full stack-4 ${!isActive ? "opacity-70" : ""}`}
+                  href={detailHref}
+                  className={`card-surface-hover flex flex-col card-pad h-full stack-4 group ${!isActive ? "opacity-70" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="stack-2 min-w-0">
-                      <h3 className="font-display text-lg font-bold text-foreground">{bot.name}</h3>
+                      <h3 className="font-display text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                        {bot.name}
+                      </h3>
                       <p className="text-sm text-muted-foreground">{bot.subtitle}</p>
                     </div>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.65rem] font-data font-medium shrink-0 ${st.border} ${st.bg} ${st.text}`}>
@@ -243,7 +115,7 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
 
                   <div className="flex items-center flex-wrap gap-2 text-xs font-data">
                     <span className="px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{bot.assetTag}</span>
-                    <span className={`font-semibold ${RISK_COLOR[bot.risk]}`}>{bot.risk} Risk</span>
+                    <span className={`font-semibold ${BOT_RISK_COLOR[bot.risk]}`}>{bot.risk} Risk</span>
                     {bot.proof?.backtest && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-profit/8 text-profit border border-profit/20">
                         <ShieldCheck size={12} />
@@ -277,7 +149,9 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
                     </div>
                   )}
 
-                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{bot.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1 line-clamp-3">
+                    {bot.description}
+                  </p>
 
                   <div className="flex flex-wrap gap-1.5">
                     {bot.pairs.map((p) => (
@@ -296,7 +170,7 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
                       {user && isActive && bot.fileKey && (
                         <button
                           type="button"
-                          onClick={() => handleDownload(bot)}
+                          onClick={(e) => handleDownload(e, bot)}
                           disabled={isDownloading}
                           className="p-2.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors cursor-pointer disabled:opacity-50"
                           title="Download EA"
@@ -304,28 +178,16 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
                           <Download size={16} />
                         </button>
                       )}
-                      {isActive ? (
-                        <Link href="/pricing" className="btn-primary-brand !text-xs !py-2.5 !px-4">
-                          Subscribe <ArrowRight size={14} />
-                        </Link>
-                      ) : (
-                        <button type="button" disabled className="btn-outline-brand !text-xs !py-2.5 !px-4 opacity-50 cursor-not-allowed">
-                          Notify Me
-                        </button>
-                      )}
+                      <span className="btn-outline-brand !text-xs !py-2.5 !px-4 pointer-events-none">
+                        Details <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                      </span>
                     </div>
                   </div>
-                </article>
+                </Link>
               );
             })}
           </div>
         )}
-
-        <p className="text-sm text-muted-foreground text-center sm:text-left">
-          Live bots verifiable on{" "}
-          <span className="text-primary font-medium cursor-pointer hover:underline">MyFxBook</span> and{" "}
-          <span className="text-primary font-medium cursor-pointer hover:underline">FXBlue</span>.
-        </p>
       </div>
     </section>
   );

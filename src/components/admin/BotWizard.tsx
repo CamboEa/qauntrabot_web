@@ -15,6 +15,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { adminFetch, adminJson } from "@/lib/admin-client";
+import { resolveBotStorageFolder, botStoragePrefix } from "@/lib/bot-storage";
 import type {
   BotDoc,
   BotProof,
@@ -50,6 +51,7 @@ const EMPTY_FORM: BotFormData = {
   description: "",
   pairs: [],
   minDeposit: "$500",
+  storageFolder: "",
   imageKey: "",
   fileKey: "",
   proof: EMPTY_BOT_PROOF,
@@ -76,7 +78,7 @@ const EMPTY_LIVE: LiveProof = {
   notes: "",
 };
 
-function slugify(id: string) {
+function slugifyId(id: string) {
   return id.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
@@ -99,6 +101,9 @@ export function botToFormData(bot: BotDoc): {
       description: bot.description,
       pairs: bot.pairs,
       minDeposit: bot.minDeposit,
+      storageFolder:
+        bot.storageFolder ??
+        resolveBotStorageFolder(bot.name, { botId: bot.id }),
       imageKey: bot.imageKey,
       fileKey: bot.fileKey,
       proof: bot.proof ?? EMPTY_BOT_PROOF,
@@ -139,7 +144,12 @@ export default function BotWizard({
   const [uploading, setUploading] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
 
-  const botId = slugify(editingId ?? formId);
+  const botId = slugifyId(editingId ?? formId);
+  const storageFolder = resolveBotStorageFolder(form.name, {
+    storageFolder: form.storageFolder,
+    botId,
+  });
+  const canUpload = Boolean(form.name.trim());
 
   useEffect(() => {
     if (mode === "edit" && initialForm) {
@@ -160,13 +170,15 @@ export default function BotWizard({
     type: string,
     index?: number
   ): Promise<string> => {
-    if (!botId) throw new Error("Set bot ID on step 1 first");
+    if (!canUpload) throw new Error("Set bot name on step 1 first");
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("type", type);
-      fd.append("id", botId);
+      fd.append("folder", storageFolder);
+      fd.append("name", form.name.trim());
+      if (botId) fd.append("id", botId);
       if (index !== undefined) fd.append("index", String(index));
       if (type === "bot-file") fd.append("platform", eaPlatform);
 
@@ -184,6 +196,9 @@ export default function BotWizard({
       if (!botId) return "Bot ID is required (e.g. xauusd-grid)";
       if (!form.name.trim()) return "Bot name is required";
       if (!form.asset.trim()) return "Asset is required";
+      if (!storageFolder || storageFolder === "unnamed") {
+        return "Bot name must contain letters or numbers for the storage folder";
+      }
       return null;
     }
     if (s === 2) {
@@ -254,6 +269,7 @@ export default function BotWizard({
 
     const payload: BotFormData = {
       ...form,
+      storageFolder,
       pairs: pairsText.split(",").map((p) => p.trim()).filter(Boolean),
       proof: buildProof(),
     };
@@ -326,6 +342,11 @@ export default function BotWizard({
             <div className="stack-4">
               <p className="text-sm text-muted-foreground">
                 Define how this bot appears in the catalogue. The ID is permanent after creation.
+                Files upload to{" "}
+                <code className="font-data text-xs bg-secondary px-1.5 py-0.5 rounded">
+                  bots/{storageFolder || "…"}/
+                </code>{" "}
+                in your R2 bucket (from the bot name).
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
                 {!isEdit && (
@@ -414,7 +435,7 @@ export default function BotWizard({
               description="Strategy Tester screenshots, equity curves, or third-party backtest reports (e.g. FX Blue)."
               enabled={includeBacktest}
               onEnabledChange={setIncludeBacktest}
-              disabled={!botId}
+              disabled={!canUpload}
               uploading={uploading}
               onUploadImage={async (file, index) => {
                 const key = await upload(file, "proof-backtest-image", index);
@@ -472,7 +493,7 @@ export default function BotWizard({
               description="Real account or forward-test screenshots — Myfxbook, broker statements, or terminal history."
               enabled={includeLive}
               onEnabledChange={setIncludeLive}
-              disabled={!botId}
+              disabled={!canUpload}
               uploading={uploading}
               onUploadImage={async (file, index) => {
                 const key = await upload(file, "proof-live-image", index);
@@ -525,7 +546,11 @@ export default function BotWizard({
           {step === 5 && (
             <div className="stack-4">
               <p className="text-sm text-muted-foreground">
-                Upload the EA file and card image, then review before publishing.
+                Upload the EA file and card image into{" "}
+                <code className="font-data text-xs bg-secondary px-1.5 py-0.5 rounded">
+                  {botStoragePrefix(storageFolder)}/
+                </code>
+                , then review before publishing.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -546,7 +571,7 @@ export default function BotWizard({
                 <UploadButton
                   label="Card image"
                   accept="image/*"
-                  disabled={!botId || uploading}
+                  disabled={!canUpload || uploading}
                   onFile={async (file) => {
                     const key = await upload(file, "bot-image");
                     setForm((f) => ({ ...f, imageKey: key }));
@@ -555,7 +580,7 @@ export default function BotWizard({
                 <UploadButton
                   label={`EA file (.ex${eaPlatform === "MT5" ? "5" : "4"})`}
                   accept=".ex4,.ex5"
-                  disabled={!botId || uploading}
+                  disabled={!canUpload || uploading}
                   onFile={async (file) => {
                     const key = await upload(file, "bot-file");
                     setForm((f) => ({ ...f, fileKey: key }));
@@ -572,6 +597,7 @@ export default function BotWizard({
 
               <ReviewSummary
                 botId={botId}
+                storageFolder={storageFolder}
                 form={form}
                 pairsText={pairsText}
                 includeBacktest={includeBacktest}
@@ -670,7 +696,7 @@ function ProofStep({
       {enabled && (
         <>
           {disabled && (
-            <p className="text-sm text-warning">Complete step 1 (Bot ID) before uploading files.</p>
+            <p className="text-sm text-warning">Enter the bot name on step 1 before uploading files.</p>
           )}
           <div className="grid sm:grid-cols-2 gap-4">{fields}</div>
 
@@ -735,6 +761,7 @@ function ProofStep({
 
 function ReviewSummary({
   botId,
+  storageFolder,
   form,
   pairsText,
   includeBacktest,
@@ -743,6 +770,7 @@ function ReviewSummary({
   live,
 }: {
   botId: string;
+  storageFolder: string;
   form: BotFormData;
   pairsText: string;
   includeBacktest: boolean;
@@ -757,6 +785,12 @@ function ReviewSummary({
         <div>
           <dt className="text-muted-foreground">ID</dt>
           <dd className="text-foreground">{botId || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">R2 folder</dt>
+          <dd className="text-foreground font-data text-[0.65rem]">
+            {botStoragePrefix(storageFolder)}/
+          </dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Status</dt>

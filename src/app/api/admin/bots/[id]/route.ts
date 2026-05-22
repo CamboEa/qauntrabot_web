@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
+import { resolveBotStorageFolder } from "@/lib/bot-storage";
+import { deleteBotFolderFromR2 } from "@/lib/r2";
 import { getBot, updateBot, deleteBot, type BotInput } from "@/lib/firestore-api";
 
 type Params = { params: Promise<{ id: string }> };
@@ -40,6 +42,18 @@ export async function DELETE(req: Request, { params }: Params) {
 
   const { id } = await params;
   try {
+    const bot = await getBot(id);
+    if (bot) {
+      const folder = resolveBotStorageFolder(bot.name, {
+        storageFolder: bot.storageFolder,
+        botId: bot.id,
+      });
+      try {
+        await deleteBotFolderFromR2(folder);
+      } catch (r2Err) {
+        console.error("[admin/bots/id DELETE] R2 cleanup failed:", r2Err);
+      }
+    }
     await deleteBot(id);
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -69,6 +69,8 @@ export type BotDoc = {
   description: string;
   pairs: string[];
   minDeposit: string;
+  /** Slug folder under `bots/` in R2 (from bot name), e.g. `xauusd-grid-pro` */
+  storageFolder?: string;
   imageKey: string;   // R2 object key for thumbnail
   fileKey: string;    // R2 object key for EA file (.ex4/.ex5)
   proof?: BotProof;

@@ -1,6 +1,14 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { botStoragePrefix, slugifyBotFolder } from "./bot-storage";
 
 // Server-only — never import this from a "use client" file
 const r2 = new S3Client({
@@ -29,7 +37,6 @@ export async function uploadToR2(
       ContentType: contentType,
     })
   );
-  // Return public URL if bucket has public access, otherwise use signed URL
   const publicBase = process.env.R2_PUBLIC_URL;
   return publicBase ? `${publicBase}/${key}` : key;
 }
@@ -47,6 +54,37 @@ export async function deleteFromR2(key: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 
+/** Delete all objects under a bot folder prefix (e.g. when removing a bot). */
+export async function deleteBotFolderFromR2(folder: string): Promise<void> {
+  const prefix = `${botStoragePrefix(folder)}/`;
+  let continuationToken: string | undefined;
+
+  do {
+    const list = await r2.send(
+      new ListObjectsV2Command({
+        Bucket: BUCKET,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const keys = (list.Contents ?? [])
+      .map((o) => o.Key)
+      .filter((k): k is string => Boolean(k));
+
+    if (keys.length > 0) {
+      await r2.send(
+        new DeleteObjectsCommand({
+          Bucket: BUCKET,
+          Delete: { Objects: keys.map((Key) => ({ Key })) },
+        })
+      );
+    }
+
+    continuationToken = list.IsTruncated ? list.NextContinuationToken : undefined;
+  } while (continuationToken);
+}
+
 // ─── Check existence ──────────────────────────────────────────────────────────
 
 export async function objectExists(key: string): Promise<boolean> {
@@ -58,24 +96,31 @@ export async function objectExists(key: string): Promise<boolean> {
   }
 }
 
-// ─── Key helpers ──────────────────────────────────────────────────────────────
+// ─── Key helpers (all files live under bots/{folder-name}/) ───────────────────
 
 function extFromFilename(name: string, fallback: string): string {
   const m = name.match(/\.([a-z0-9]+)$/i);
   return m ? m[1].toLowerCase() : fallback;
 }
 
+function botRoot(folder: string): string {
+  return botStoragePrefix(folder);
+}
+
 export const r2Keys = {
-  botImage: (botId: string) => `bots/images/${botId}.webp`,
-  botFile: (botId: string, platform: "MT4" | "MT5") =>
-    `bots/files/${botId}-${platform.toLowerCase()}.ex${platform === "MT5" ? "5" : "4"}`,
-  proofBacktestImage: (botId: string, index: number, filename: string) =>
-    `bots/${botId}/proof/backtest/img-${index}.${extFromFilename(filename, "png")}`,
-  proofBacktestReport: (botId: string, filename: string) =>
-    `bots/${botId}/proof/backtest/report.${extFromFilename(filename, "pdf")}`,
-  proofLiveImage: (botId: string, index: number, filename: string) =>
-    `bots/${botId}/proof/live/img-${index}.${extFromFilename(filename, "png")}`,
-  proofLiveReport: (botId: string, filename: string) =>
-    `bots/${botId}/proof/live/report.${extFromFilename(filename, "pdf")}`,
+  botImage: (folder: string, filename: string) =>
+    `${botRoot(folder)}/cover.${extFromFilename(filename, "webp")}`,
+  botFile: (folder: string, platform: "MT4" | "MT5") =>
+    `${botRoot(folder)}/ea-${platform.toLowerCase()}.ex${platform === "MT5" ? "5" : "4"}`,
+  proofBacktestImage: (folder: string, index: number, filename: string) =>
+    `${botRoot(folder)}/proof/backtest/images/img-${index}.${extFromFilename(filename, "png")}`,
+  proofBacktestReport: (folder: string, filename: string) =>
+    `${botRoot(folder)}/proof/backtest/report.${extFromFilename(filename, "pdf")}`,
+  proofLiveImage: (folder: string, index: number, filename: string) =>
+    `${botRoot(folder)}/proof/live/images/img-${index}.${extFromFilename(filename, "png")}`,
+  proofLiveReport: (folder: string, filename: string) =>
+    `${botRoot(folder)}/proof/live/report.${extFromFilename(filename, "pdf")}`,
   userAvatar: (uid: string) => `users/avatars/${uid}.webp`,
 };
+
+export { slugifyBotFolder };
