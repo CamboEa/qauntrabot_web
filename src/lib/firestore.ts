@@ -1,0 +1,211 @@
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+  type DocumentData,
+} from "firebase/firestore";
+import { db } from "./firebase";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type BotStatus = "live" | "beta" | "soon";
+export type RiskLevel = "Low" | "Medium" | "High";
+export type PlanTier = "starter" | "pro" | "institutional";
+
+export type BotDoc = {
+  id: string;
+  name: string;
+  subtitle: string;
+  asset: string;
+  assetTag: string;
+  status: BotStatus;
+  risk: RiskLevel;
+  gain: string;
+  drawdown: string;
+  winRate: string;
+  trades: string;
+  description: string;
+  pairs: string[];
+  minDeposit: string;
+  imageKey: string;   // R2 object key for thumbnail
+  fileKey: string;    // R2 object key for EA file (.ex4/.ex5)
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type UserProfile = {
+  uid: string;
+  email: string;
+  platform: string;
+  displayName?: string;
+  createdAt: Date;
+};
+
+export type Subscription = {
+  uid: string;
+  plan: PlanTier;
+  botIds: string[];
+  mtAccountNumber: string;
+  licenseKey: string;
+  validUntil: Date | null;
+  createdAt: Date;
+};
+
+// ─── User profile ─────────────────────────────────────────────────────────────
+
+export async function createUserProfile(
+  uid: string,
+  data: { email: string; platform: string; displayName?: string }
+): Promise<void> {
+  await setDoc(doc(db, "users", uid), {
+    ...data,
+    uid,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as unknown as UserProfile;
+}
+
+export async function updateUserProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
+  await updateDoc(doc(db, "users", uid), data as DocumentData);
+}
+
+// ─── Bots ─────────────────────────────────────────────────────────────────────
+
+export async function getAllBots(): Promise<BotDoc[]> {
+  const snap = await getDocs(query(collection(db, "bots"), orderBy("createdAt", "asc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as BotDoc));
+}
+
+export async function getLiveBots(): Promise<BotDoc[]> {
+  const snap = await getDocs(
+    query(collection(db, "bots"), where("status", "==", "live"), orderBy("createdAt", "asc"))
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as BotDoc));
+}
+
+export async function getBot(botId: string): Promise<BotDoc | null> {
+  const snap = await getDoc(doc(db, "bots", botId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as BotDoc;
+}
+
+export type BotInput = Omit<BotDoc, "id" | "createdAt" | "updatedAt">;
+
+export async function createBot(
+  botId: string,
+  data: BotInput
+): Promise<void> {
+  await setDoc(doc(db, "bots", botId), {
+    ...data,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateBot(botId: string, data: Partial<BotInput>): Promise<void> {
+  await updateDoc(doc(db, "bots", botId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  } as DocumentData);
+}
+
+export async function deleteBot(botId: string): Promise<void> {
+  await deleteDoc(doc(db, "bots", botId));
+}
+
+// ─── Users (admin) ──────────────────────────────────────────────────────────
+
+export async function getAllUsers(): Promise<UserProfile[]> {
+  const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      uid: d.id,
+      email: data.email as string,
+      platform: data.platform as string,
+      displayName: data.displayName as string | undefined,
+      createdAt: data.createdAt?.toDate?.() ?? new Date(),
+    };
+  });
+}
+
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+
+export async function getUserSubscription(uid: string): Promise<Subscription | null> {
+  const snap = await getDoc(doc(db, "subscriptions", uid));
+  if (!snap.exists()) return null;
+  return { uid, ...snap.data() } as Subscription;
+}
+
+export async function hasAccessToBot(uid: string, botId: string): Promise<boolean> {
+  const sub = await getUserSubscription(uid);
+  if (!sub) return false;
+  return sub.botIds.includes(botId) || sub.plan === "institutional";
+}
+
+export async function getAllSubscriptions(): Promise<Subscription[]> {
+  const snap = await getDocs(collection(db, "subscriptions"));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      uid: d.id,
+      plan: data.plan as PlanTier,
+      botIds: (data.botIds as string[]) ?? [],
+      mtAccountNumber: (data.mtAccountNumber as string) ?? "",
+      licenseKey: (data.licenseKey as string) ?? "",
+      validUntil: data.validUntil?.toDate?.() ?? null,
+      createdAt: data.createdAt?.toDate?.() ?? new Date(),
+    };
+  });
+}
+
+export type SubscriptionInput = {
+  plan: PlanTier;
+  botIds: string[];
+  mtAccountNumber?: string;
+  licenseKey?: string;
+  validUntil?: Date | null;
+};
+
+export async function upsertSubscription(uid: string, data: SubscriptionInput): Promise<void> {
+  const existing = await getDoc(doc(db, "subscriptions", uid));
+  const payload: DocumentData = {
+    plan: data.plan,
+    botIds: data.botIds,
+    mtAccountNumber: data.mtAccountNumber ?? "",
+    licenseKey: data.licenseKey ?? generateLicenseKey(),
+    validUntil: data.validUntil ?? null,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (existing.exists()) {
+    await updateDoc(doc(db, "subscriptions", uid), payload);
+  } else {
+    await setDoc(doc(db, "subscriptions", uid), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+  }
+}
+
+export async function deleteSubscription(uid: string): Promise<void> {
+  await deleteDoc(doc(db, "subscriptions", uid));
+}
+
+function generateLicenseKey(): string {
+  const seg = () => Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `QB-${seg()}-${seg()}-${seg()}`;
+}
