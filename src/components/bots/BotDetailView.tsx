@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
   Download,
   ShieldCheck,
@@ -14,73 +13,16 @@ import {
   FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import type { BacktestProof, LiveProof } from "@/lib/firestore";
+import { getUserSubscription, type BacktestProof, LiveProof } from "@/lib/firestore";
+import { isSubscriptionActive } from "@/lib/subscription-plans";
 import {
   BOT_RISK_COLOR,
   BOT_STATUS_CONFIG,
   type SerializableBot,
 } from "@/lib/bot-display";
-
-function SignedAssetImage({
-  objectKey,
-  alt,
-  className = "",
-}: {
-  objectKey: string;
-  alt: string;
-  className?: string;
-}) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/download?key=${encodeURIComponent(objectKey)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled && d.url) setSrc(d.url);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [objectKey]);
-
-  if (loading) {
-    return (
-      <div
-        className={`bg-secondary animate-pulse rounded-xl aspect-video ${className}`}
-        aria-hidden
-      />
-    );
-  }
-
-  if (!src) {
-    return (
-      <div
-        className={`flex items-center justify-center bg-secondary rounded-xl aspect-video text-xs text-muted-foreground font-data ${className}`}
-      >
-        Preview unavailable
-      </div>
-    );
-  }
-
-  return (
-    <a
-      href={src}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`block overflow-hidden rounded-xl border border-border bg-card ${className}`}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="w-full h-auto object-cover" />
-    </a>
-  );
-}
+import PageSection from "@/components/shared/PageSection";
+import ContentHeading from "@/components/shared/ContentHeading";
+import R2Image from "@/components/shared/R2Image";
 
 function ProofBlock({
   title,
@@ -111,10 +53,11 @@ function ProofBlock({
 
   return (
     <section className="card-surface card-pad stack-4">
-      <div className="flex items-center gap-2">
-        <Icon size={18} className="text-primary shrink-0" />
-        <h2 className="font-display text-lg font-bold text-foreground">{title}</h2>
-        <span className="inline-flex items-center gap-1 ml-auto text-[0.65rem] font-data px-2 py-0.5 rounded-full bg-profit/8 text-profit border border-profit/20">
+      <div className="flex items-center gap-2 flex-wrap">
+        <ContentHeading icon={Icon} className="!text-lg flex-1 min-w-0">
+          {title}
+        </ContentHeading>
+        <span className="inline-flex items-center gap-1 text-[0.65rem] font-data px-2 py-0.5 rounded-full bg-profit/8 text-profit border border-profit/20">
           <ShieldCheck size={12} />
           Verified
         </span>
@@ -122,8 +65,8 @@ function ProofBlock({
 
       <dl className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {meta.map(({ label, value }) => (
-          <div key={label} className="rounded-lg bg-secondary/50 px-3 py-2">
-            <dt className="text-[0.65rem] font-data uppercase text-muted-foreground">{label}</dt>
+          <div key={label} className="meta-cell">
+            <dt className="stat-label">{label}</dt>
             <dd className="text-sm font-medium text-foreground mt-0.5">{value || "—"}</dd>
           </div>
         ))}
@@ -138,10 +81,11 @@ function ProofBlock({
       {proof.imageKeys.length > 0 && (
         <div className="grid sm:grid-cols-2 gap-3">
           {proof.imageKeys.map((key, i) => (
-            <SignedAssetImage
+            <R2Image
               key={key}
               objectKey={key}
               alt={`${title} screenshot ${i + 1}`}
+              aspectClassName="aspect-video"
             />
           ))}
         </div>
@@ -168,12 +112,22 @@ function ProofBlock({
 
 type Props = {
   bot: SerializableBot;
-  coverUrl: string | null;
 };
 
-export default function BotDetailView({ bot, coverUrl }: Props) {
+export default function BotDetailView({ bot }: Props) {
   const { user } = useAuth();
   const [downloading, setDownloading] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setHasSubscription(false);
+      return;
+    }
+    getUserSubscription(user.uid)
+      .then((sub) => setHasSubscription(sub ? isSubscriptionActive(sub.validUntil, sub.status) : false))
+      .catch(() => setHasSubscription(false));
+  }, [user]);
   const st = BOT_STATUS_CONFIG[bot.status];
   const isActive = bot.status !== "soon";
 
@@ -204,64 +158,35 @@ export default function BotDetailView({ bot, coverUrl }: Props) {
   ];
 
   return (
-    <div className="section-cream section-y">
-      <div className="container-site stack-8">
-        <Link
-          href="/bots"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-data"
-        >
-          <ArrowLeft size={16} />
-          All bots
-        </Link>
+    <PageSection underHero containerClassName="stack-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.65rem] font-data font-medium ${st.border} ${st.bg} ${st.text}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+            {st.label}
+          </span>
+          <span className="pair-tag">{bot.assetTag}</span>
+          <span className={`text-xs font-data font-semibold ${BOT_RISK_COLOR[bot.risk]}`}>
+            {bot.risk} risk
+          </span>
+        </div>
 
         <div className="grid lg:grid-cols-[1fr_320px] gap-8 lg:gap-12 items-start">
-          <div className="stack-8 min-w-0">
-            <header className="stack-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.65rem] font-data font-medium ${st.border} ${st.bg} ${st.text}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                  {st.label}
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs font-data">
-                  {bot.assetTag}
-                </span>
-                <span className={`text-xs font-data font-semibold ${BOT_RISK_COLOR[bot.risk]}`}>
-                  {bot.risk} risk
-                </span>
-              </div>
-
-              <div>
-                <h1 className="page-title">{bot.name}</h1>
-                <p className="text-lg text-muted-foreground mt-2">{bot.subtitle}</p>
-                <p className="text-sm font-data text-muted-foreground mt-1">{bot.asset}</p>
-              </div>
-
-              {coverUrl && (
-                <div className="overflow-hidden rounded-xl border border-border bg-card max-h-72">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={coverUrl}
-                    alt={bot.name}
-                    className="w-full h-auto max-h-72 object-cover"
-                  />
-                </div>
-              )}
-            </header>
+          <div className="stack-6 min-w-0">
+            <R2Image
+              objectKey={bot.imageKey}
+              alt={bot.name}
+              aspectClassName="aspect-[21/9] max-h-72"
+              imgClassName="w-full h-full max-h-72 object-cover"
+            />
 
             <section className="stack-3">
-              <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
-                <TrendingUp size={20} className="text-primary" />
-                Overview
-              </h2>
+              <ContentHeading icon={TrendingUp}>Overview</ContentHeading>
               <p className="text-base text-muted-foreground leading-relaxed">{bot.description}</p>
               <div className="flex flex-wrap gap-2">
                 {bot.pairs.map((p) => (
-                  <span
-                    key={p}
-                    className="text-[0.65rem] px-2.5 py-1 rounded-md bg-secondary text-muted-foreground font-data"
-                  >
+                  <span key={p} className="pair-tag">
                     {p}
                   </span>
                 ))}
@@ -289,16 +214,14 @@ export default function BotDetailView({ bot, coverUrl }: Props) {
 
           <aside className="lg:sticky lg:top-28 stack-4">
             <div className="card-surface card-pad stack-4">
-              <p className="text-xs font-data uppercase text-muted-foreground tracking-wider">
-                Performance
-              </p>
+              <p className="stat-label">Performance</p>
 
               {isActive ? (
                 <div className="grid grid-cols-2 gap-3">
                   {stats.map(({ label, value, color }) => (
                     <div key={label} className="rounded-xl bg-secondary/60 p-3 text-center">
                       <div className={`text-lg font-bold font-data ${color}`}>{value}</div>
-                      <div className="text-[0.6rem] text-muted-foreground uppercase mt-1">
+                      <div className="stat-label mt-1 normal-case tracking-normal text-[0.6rem]">
                         {label}
                       </div>
                     </div>
@@ -335,7 +258,7 @@ export default function BotDetailView({ bot, coverUrl }: Props) {
                     Coming soon
                   </button>
                 )}
-                {user && isActive && bot.fileKey && (
+                {user && hasSubscription && isActive && bot.fileKey && (
                   <button
                     type="button"
                     onClick={handleDownload}
@@ -369,13 +292,12 @@ export default function BotDetailView({ bot, coverUrl }: Props) {
             <div className="card-surface card-pad flex items-start gap-3 text-sm text-muted-foreground">
               <Layers size={18} className="shrink-0 text-primary mt-0.5" />
               <p>
-                Deploy on MT4 or MT5 with isolated risk settings. License and setup guide sent after
-                subscription.
+                Active subscription unlocks every bot in the catalogue — deploy on MT4 or MT5 with
+                isolated risk settings.
               </p>
             </div>
           </aside>
         </div>
-      </div>
-    </div>
+    </PageSection>
   );
 }

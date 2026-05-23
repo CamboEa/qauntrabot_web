@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import { adminJson } from "@/lib/admin-client";
 import type { UserProfile } from "@/lib/firestore";
+import { formatDisplayDate } from "@/lib/dates";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -56,9 +57,7 @@ export default function AdminUsersPage() {
                       {u.uid}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {u.createdAt instanceof Date
-                        ? u.createdAt.toLocaleDateString()
-                        : "—"}
+                      {formatDisplayDate(u.createdAt, "—")}
                     </td>
                   </tr>
                 ))

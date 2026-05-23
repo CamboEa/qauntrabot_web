@@ -15,7 +15,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { adminFetch, adminJson } from "@/lib/admin-client";
-import { resolveBotStorageFolder, botStoragePrefix } from "@/lib/bot-storage";
+import { resolveBotStorageFolder, botStoragePrefix, slugifyBotFolder } from "@/lib/bot-storage";
 import type {
   BotDoc,
   BotProof,
@@ -78,10 +78,6 @@ const EMPTY_LIVE: LiveProof = {
   notes: "",
 };
 
-function slugifyId(id: string) {
-  return id.trim().toLowerCase().replace(/\s+/g, "-");
-}
-
 export function botToFormData(bot: BotDoc): {
   form: BotFormData;
   pairsText: string;
@@ -115,7 +111,6 @@ export function botToFormData(bot: BotDoc): {
 type Props = {
   mode: "create" | "edit";
   editingId?: string;
-  initialFormId?: string;
   initialForm?: BotFormData;
   initialPairsText?: string;
 };
@@ -123,14 +118,12 @@ type Props = {
 export default function BotWizard({
   mode,
   editingId = undefined,
-  initialFormId = "",
   initialForm,
   initialPairsText = "",
 }: Props) {
   const router = useRouter();
   const isEdit = mode === "edit" && !!editingId;
   const [step, setStep] = useState(1);
-  const [formId, setFormId] = useState(initialFormId);
   const [form, setForm] = useState<BotFormData>(initialForm ?? EMPTY_FORM);
   const [pairsText, setPairsText] = useState(initialPairsText);
   const [includeBacktest, setIncludeBacktest] = useState(!!initialForm?.proof?.backtest);
@@ -144,7 +137,9 @@ export default function BotWizard({
   const [uploading, setUploading] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
 
-  const botId = slugifyId(editingId ?? formId);
+  const botId = isEdit
+    ? slugifyBotFolder(editingId!)
+    : slugifyBotFolder(form.name);
   const storageFolder = resolveBotStorageFolder(form.name, {
     storageFolder: form.storageFolder,
     botId,
@@ -153,7 +148,6 @@ export default function BotWizard({
 
   useEffect(() => {
     if (mode === "edit" && initialForm) {
-      setFormId(initialFormId);
       setForm(initialForm);
       setPairsText(initialPairsText);
       setIncludeBacktest(!!initialForm.proof?.backtest);
@@ -161,7 +155,7 @@ export default function BotWizard({
       setBacktest(initialForm.proof?.backtest ?? { ...EMPTY_BACKTEST });
       setLive(initialForm.proof?.live ?? { ...EMPTY_LIVE });
     }
-  }, [mode, initialFormId, initialForm, initialPairsText]);
+  }, [mode, initialForm, initialPairsText]);
 
   const exitToList = () => router.push("/admin/bots");
 
@@ -193,9 +187,10 @@ export default function BotWizard({
 
   const validateStep = (s: number): string | null => {
     if (s === 1) {
-      if (!botId) return "Bot ID is required (e.g. xauusd-grid)";
       if (!form.name.trim()) return "Bot name is required";
-      if (!form.asset.trim()) return "Asset is required";
+      if (!isEdit && (!botId || botId === "unnamed")) {
+        return "Bot name must include letters or numbers to generate an ID";
+      }
       if (!storageFolder || storageFolder === "unnamed") {
         return "Bot name must contain letters or numbers for the storage folder";
       }
@@ -267,10 +262,13 @@ export default function BotWizard({
       }
     }
 
+    const pairs = pairsText.split(",").map((p) => p.trim()).filter(Boolean);
     const payload: BotFormData = {
       ...form,
       storageFolder,
-      pairs: pairsText.split(",").map((p) => p.trim()).filter(Boolean),
+      pairs,
+      asset: pairs.length > 0 ? pairs.join(" · ") : form.subtitle.trim() || form.name.trim(),
+      assetTag: pairs[0] ?? (form.subtitle.trim() || "EA"),
       proof: buildProof(),
     };
 
@@ -341,34 +339,38 @@ export default function BotWizard({
           {step === 1 && (
             <div className="stack-4">
               <p className="text-sm text-muted-foreground">
-                Define how this bot appears in the catalogue. The ID is permanent after creation.
-                Files upload to{" "}
+                Define how this bot appears in the catalogue. The bot ID is generated from the name and
+                cannot be changed after creation. Files upload to{" "}
                 <code className="font-data text-xs bg-secondary px-1.5 py-0.5 rounded">
                   bots/{storageFolder || "…"}/
                 </code>{" "}
                 in your R2 bucket (from the bot name).
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
-                {!isEdit && (
-                  <Field
-                    className="sm:col-span-2"
-                    label="Bot ID (slug)"
-                    value={formId}
-                    onChange={setFormId}
-                    placeholder="xauusd-grid"
-                  />
+                <Field
+                  className={isEdit ? "" : "sm:col-span-2"}
+                  label="Name"
+                  value={form.name}
+                  onChange={(v) => setForm({ ...form, name: v })}
+                  placeholder="XAUUSD Grid Pro"
+                />
+                {(isEdit || form.name.trim()) && (
+                  <div className={`stack-2 ${isEdit ? "sm:col-span-2" : ""}`}>
+                    <span className="field-label">Bot ID {isEdit ? "" : "(auto)"}</span>
+                    <p className="font-data text-sm text-foreground bg-secondary/60 border border-border rounded-xl px-3 py-2">
+                      {botId || "—"}
+                    </p>
+                    {isEdit && (
+                      <p className="text-xs text-muted-foreground">
+                        Permanent — used in URLs and Firestore.
+                      </p>
+                    )}
+                  </div>
                 )}
-                <Field label="Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
                 <Field
                   label="Subtitle"
                   value={form.subtitle}
                   onChange={(v) => setForm({ ...form, subtitle: v })}
-                />
-                <Field label="Asset" value={form.asset} onChange={(v) => setForm({ ...form, asset: v })} />
-                <Field
-                  label="Asset tag"
-                  value={form.assetTag}
-                  onChange={(v) => setForm({ ...form, assetTag: v })}
                 />
                 <SelectField
                   label="Status"
@@ -578,8 +580,8 @@ export default function BotWizard({
                   }}
                 />
                 <UploadButton
-                  label={`EA file (.ex${eaPlatform === "MT5" ? "5" : "4"})`}
-                  accept=".ex4,.ex5"
+                  label="EA file (.ex4, .ex5, .mq5)"
+                  accept=".ex4,.ex5,.mq5"
                   disabled={!canUpload || uploading}
                   onFile={async (file) => {
                     const key = await upload(file, "bot-file");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
+import PageSection from "@/components/shared/PageSection";
 
 const FAQS = [
   { q: "Which brokers are compatible with QauntraBot EAs?", a: "QauntraBot operates on any MT4 or MT5 broker that supports automated trading. We recommend ECN/STP brokers with raw spreads and low latency." },
@@ -19,8 +20,7 @@ export default function FAQSection({ hideHeader = false }: { hideHeader?: boolea
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faqs" className={`section-cream ${hideHeader ? "page-body-y" : "section-y"}`}>
-      <div className="container-site max-w-3xl stack-6">
+    <PageSection id="faqs" underHero={hideHeader} standalone={!hideHeader} narrow>
         {!hideHeader && (
           <div className="headline-gap">
             <SectionHeader eyebrow="Common Questions" title="Frequently asked" accent="questions." />
@@ -57,7 +57,6 @@ export default function FAQSection({ hideHeader = false }: { hideHeader?: boolea
           <span className="text-primary font-semibold hover:underline cursor-pointer">Contact support</span>
           {" "}— avg. response under 4 hours.
         </p>
-      </div>
-    </section>
+    </PageSection>
   );
 }

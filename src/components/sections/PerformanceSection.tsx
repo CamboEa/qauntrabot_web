@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import SectionHeader from "@/components/shared/SectionHeader";
+import PageSection from "@/components/shared/PageSection";
+import StatCard from "@/components/shared/StatCard";
 
 type Strategy = {
   name: string;
@@ -91,8 +93,7 @@ export default function PerformanceSection({ hideHeader = false }: { hideHeader?
   const maxMonthly = Math.max(...s.monthly.map((m) => Math.abs(m.value)));
 
   return (
-    <section id="performance" className={`bg-background ${hideHeader ? "page-body-y" : "section-y"}`}>
-      <div className="container-site stack-6">
+    <PageSection id="performance" underHero={hideHeader} standalone={!hideHeader}>
         {!hideHeader && (
           <div className="headline-gap">
             <SectionHeader
@@ -111,7 +112,7 @@ export default function PerformanceSection({ hideHeader = false }: { hideHeader?
               key={st.name}
               type="button"
               onClick={() => setActive(i)}
-              className={`shrink-0 ${active === i ? "tab-pill-active" : ""}`}
+              className={`shrink-0 cursor-pointer ${active === i ? "tab-pill-active" : ""}`}
             >
               {st.name}
               <span className="ml-1.5 opacity-60 text-xs">{st.tag}</span>
@@ -126,16 +127,13 @@ export default function PerformanceSection({ hideHeader = false }: { hideHeader?
             { label: "Win Rate", value: s.winRate, color: "text-foreground" },
             { label: "Profit Factor", value: s.profitFactor, color: "text-profit" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="card-surface card-pad stack-2">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-data">{label}</p>
-              <p className={`font-display text-2xl md:text-3xl font-bold ${color}`}>{value}</p>
-            </div>
+            <StatCard key={label} label={label} value={value} valueClassName={color} />
           ))}
         </div>
 
         <div className="grid lg:grid-cols-3 grid-site">
           <div className="card-surface card-pad stack-3">
-            <p className="text-xs font-data uppercase tracking-wide text-muted-foreground">Additional stats</p>
+            <p className="stat-label">Additional stats</p>
             {[
               { label: "Closed Trades", value: s.trades },
               { label: "Avg Risk:Reward", value: s.avgRR },
@@ -153,7 +151,7 @@ export default function PerformanceSection({ hideHeader = false }: { hideHeader?
 
           <div className="lg:col-span-2 card-surface card-pad stack-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-data uppercase tracking-wide text-muted-foreground">Monthly performance (%)</p>
+              <p className="stat-label">Monthly performance (%)</p>
               <div className="flex gap-4 text-xs text-muted-foreground font-data">
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-profit/75" />Gain</span>
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-loss/65" />Loss</span>
@@ -171,7 +169,6 @@ export default function PerformanceSection({ hideHeader = false }: { hideHeader?
             </div>
           </div>
         </div>
-      </div>
-    </section>
+    </PageSection>
   );
 }

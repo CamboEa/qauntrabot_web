@@ -12,6 +12,11 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     match /subscriptions/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow read, write: if true;

@@ -6,6 +6,7 @@ import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 import { signUp, signIn, resetPassword } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
+import PageSection from "@/components/shared/PageSection";
 
 const PLATFORMS = ["MetaTrader 5 (MT5)", "MetaTrader 4 (MT4)"];
 
@@ -23,13 +24,9 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
   const [resetSent, setResetSent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const inputClass =
-    "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary transition-all";
-
   if (user && !submitted) {
     return (
-      <section id="registration" className="bg-background page-body-y">
-        <div className="container-site max-w-md mx-auto">
+      <PageSection id="registration" underHero narrow>
           <div className="card-surface card-pad text-center stack-4">
             <div className="w-14 h-14 rounded-full bg-profit/10 flex items-center justify-center mx-auto">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-profit">
@@ -40,12 +37,16 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
               <h3 className="font-display text-xl font-bold text-foreground">You&apos;re signed in</h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
-            <button type="button" onClick={() => router.push("/bots")} className="btn-primary-brand mx-auto cursor-pointer">
-              Browse Bots <ArrowRight size={16} />
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button type="button" onClick={() => router.push("/profile")} className="btn-primary-brand cursor-pointer">
+                My profile <ArrowRight size={16} />
+              </button>
+              <button type="button" onClick={() => router.push("/bots")} className="btn-outline-brand cursor-pointer">
+                Browse bots
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+      </PageSection>
     );
   }
 
@@ -57,7 +58,10 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
       if (mode === "register") await signUp(form.email, form.password, form.platform);
       else await signIn(form.email, form.password);
       setSubmitted(true);
-      setTimeout(() => router.push("/bots"), 1500);
+      setTimeout(() => {
+        const next = new URLSearchParams(window.location.search).get("next");
+        router.push(next?.startsWith("/") ? next : "/profile");
+      }, 1500);
     } catch (err: unknown) {
       setError(friendlyError(err instanceof Error ? err.message : "Something went wrong"));
     } finally {
@@ -83,8 +87,7 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
   };
 
   return (
-    <section id="registration" className={`bg-background ${hideHeader ? "page-body-y" : "section-y"}`}>
-      <div className="container-site max-w-md mx-auto stack-6">
+    <PageSection id="registration" underHero={hideHeader} standalone={!hideHeader} narrow>
         {!hideHeader && (
           <SectionHeader
             eyebrow="Secure Access Portal"
@@ -122,7 +125,7 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
                       key={m}
                       type="button"
                       onClick={() => { setMode(m); setError(null); setResetSent(false); }}
-                      className={`flex-1 ${mode === m ? "tab-pill-active" : ""}`}
+                      className={`flex-1 cursor-pointer ${mode === m ? "tab-pill-active" : ""}`}
                     >
                       {m === "register" ? "Create account" : "Sign in"}
                     </button>
@@ -132,24 +135,24 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
 
               <form onSubmit={handleSubmit} className="card-pad pt-0 stack-4">
                 {error && (
-                  <div className="flex items-start gap-3 rounded-xl border border-loss/25 bg-loss/5 px-4 py-3">
-                    <AlertCircle size={16} className="text-loss shrink-0" />
-                    <p className="text-sm text-loss">{error}</p>
+                  <div className="alert-error">
+                    <AlertCircle size={16} className="shrink-0" />
+                    <p>{error}</p>
                   </div>
                 )}
                 {resetSent && (
-                  <div className="rounded-xl border border-profit/25 bg-profit/5 px-4 py-3 text-sm text-profit">
+                  <div className="alert-success">
                     Password reset email sent — check your inbox.
                   </div>
                 )}
 
                 <div className="stack-2">
-                  <label className="text-xs font-semibold text-muted-foreground font-data uppercase tracking-wide">Email</label>
-                  <input type="email" required placeholder="you@example.com" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className={inputClass} disabled={loading} />
+                  <label className="field-label">Email</label>
+                  <input type="email" required placeholder="you@example.com" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="input-field" disabled={loading} />
                 </div>
 
                 <div className="stack-2">
-                  <label className="text-xs font-semibold text-muted-foreground font-data uppercase tracking-wide">Password</label>
+                  <label className="field-label">Password</label>
                   <div className="relative">
                     <input
                       type={showPass ? "text" : "password"}
@@ -158,7 +161,7 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
                       placeholder={mode === "register" ? "Min. 8 characters" : "Your password"}
                       value={form.password}
                       onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                      className={`${inputClass} pr-12`}
+                      className="input-field pr-12"
                       disabled={loading}
                     />
                     <button type="button" onClick={() => setShowPass((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer">
@@ -169,8 +172,8 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
 
                 {mode === "register" && (
                   <div className="stack-2">
-                    <label className="text-xs font-semibold text-muted-foreground font-data uppercase tracking-wide">Platform</label>
-                    <select value={form.platform} onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))} className={`${inputClass} cursor-pointer`} disabled={loading}>
+                    <label className="field-label">Platform</label>
+                    <select value={form.platform} onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))} className="input-field cursor-pointer" disabled={loading}>
                       {PLATFORMS.map((p) => (
                         <option key={p} value={p}>{p}</option>
                       ))}
@@ -202,8 +205,7 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
             </>
           )}
         </div>
-      </div>
-    </section>
+    </PageSection>
   );
 }
 

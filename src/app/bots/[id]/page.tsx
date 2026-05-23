@@ -1,31 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import PageWrapper from "@/components/layout/PageWrapper";
 import BotDetailView from "@/components/bots/BotDetailView";
+import PageWrapper from "@/components/layout/PageWrapper";
 import { getAllBots, getBot } from "@/lib/firestore-api";
-import { getFallbackBot, FALLBACK_BOTS } from "@/lib/fallback-bots";
-import { publicAssetUrl, serializeBot } from "@/lib/bot-display";
+import { serializeBot } from "@/lib/bot-display";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function generateStaticParams() {
   try {
     const bots = await getAllBots();
-    if (bots.length > 0) return bots.map((b) => ({ id: b.id }));
+    return bots.map((b) => ({ id: b.id }));
   } catch {
-    /* use fallback */
+    return [];
   }
-  return FALLBACK_BOTS.map((b) => ({ id: b.id }));
 }
 
 async function resolveBot(id: string) {
   try {
-    const fromDb = await getBot(id);
-    if (fromDb) return fromDb;
+    return await getBot(id);
   } catch {
-    /* fallback */
+    return null;
   }
-  return getFallbackBot(id);
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -48,11 +44,20 @@ export default async function BotDetailPage({ params }: Params) {
     notFound();
   }
 
-  const coverUrl = publicAssetUrl(bot.imageKey);
+  const isActive = bot.status !== "soon";
 
   return (
-    <PageWrapper>
-      <BotDetailView bot={serializeBot(bot)} coverUrl={coverUrl} />
+    <PageWrapper
+      hero={{
+        eyebrow: bot.assetTag,
+        title: bot.name,
+        accent: bot.subtitle.endsWith(".") ? bot.subtitle : `${bot.subtitle}.`,
+        description: `${bot.asset} · ${bot.risk} risk · Min. deposit ${bot.minDeposit}`,
+        cta: isActive ? { label: "Subscribe", href: "/pricing" } : undefined,
+        secondaryCta: { label: "All bots", href: "/bots" },
+      }}
+    >
+      <BotDetailView bot={serializeBot(bot)} />
     </PageWrapper>
   );
 }

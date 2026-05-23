@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import UserNavMenu from "./UserNavMenu";
 
 const NAV_LINKS = [
   { label: "Bots", href: "/bots" },
@@ -75,12 +76,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
-            <Link href="/register" className="nav-link cursor-pointer">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary-brand text-sm !py-2.5 !px-5">
-              Get Access
-            </Link>
+            <UserNavMenu />
           </div>
 
           <button
@@ -117,16 +113,8 @@ export default function Navbar() {
                   </Link>
                 );
               })}
-              <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
-                <Link
-                  href="/register"
-                  className="rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer text-center"
-                >
-                  Sign In
-                </Link>
-                <Link href="/register" className="btn-primary-brand w-full justify-center">
-                  Get Access
-                </Link>
+              <div className="mt-4 pt-4 border-t border-border">
+                <UserNavMenu mobile />
               </div>
             </div>
           </div>

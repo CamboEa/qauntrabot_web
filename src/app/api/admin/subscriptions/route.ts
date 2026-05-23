@@ -8,7 +8,13 @@ export async function GET(req: Request) {
 
   try {
     const subs = await getAllSubscriptions();
-    return NextResponse.json(subs);
+    return NextResponse.json(
+      subs.map((s) => ({
+        ...s,
+        validUntil: s.validUntil?.toISOString() ?? null,
+        createdAt: s.createdAt.toISOString(),
+      }))
+    );
   } catch (err) {
     console.error("[admin/subscriptions GET]", err);
     return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 });

@@ -49,7 +49,6 @@ export default function EditBotPage() {
         <BotWizard
           mode="edit"
           editingId={id}
-          initialFormId={id}
           initialForm={form}
           initialPairsText={pairsText}
         />

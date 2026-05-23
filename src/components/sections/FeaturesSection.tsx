@@ -9,6 +9,8 @@ import {
   Lock,
 } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
+import PageSection from "@/components/shared/PageSection";
+import IconTile from "@/components/shared/IconTile";
 
 const FEATURES = [
   { icon: Shield, title: "Smart Risk Management", description: "Adaptive trailing stops, auto position sizing, and configurable max drawdown caps per strategy.", tags: ["Trailing SL/TP", "Position Sizing", "Drawdown Cap"] },
@@ -23,40 +25,36 @@ const FEATURES = [
 
 export default function FeaturesSection({ hideHeader = false }: { hideHeader?: boolean }) {
   return (
-    <section id="features" className={`section-cream ${hideHeader ? "page-body-y" : "section-y"}`}>
-      <div className="container-site stack-6">
-        {!hideHeader && (
-          <div className="headline-gap">
-            <SectionHeader
-              eyebrow="Technical Capabilities"
-              title="Built for professionals."
-              accent="Engineered for edge."
-              description="Every module architected for reliability, configurability, and institutional-grade risk discipline."
-            />
-          </div>
-        )}
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 grid-site">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="card-surface-hover card-pad flex flex-col stack-4 h-full">
-              <div className="w-10 h-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center">
-                <f.icon size={18} className="text-primary" strokeWidth={1.75} />
-              </div>
-              <div className="flex-1 stack-2">
-                <h3 className="font-display text-base font-bold text-foreground">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5 pt-4 border-t border-border">
-                {f.tags.map((tag) => (
-                  <span key={tag} className="text-[0.65rem] px-2 py-0.5 rounded-md bg-secondary text-muted-foreground font-data">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+    <PageSection id="features" underHero={hideHeader} standalone={!hideHeader}>
+      {!hideHeader && (
+        <div className="headline-gap">
+          <SectionHeader
+            eyebrow="Technical Capabilities"
+            title="Built for professionals."
+            accent="Engineered for edge."
+            description="Every module architected for reliability, configurability, and institutional-grade risk discipline."
+          />
         </div>
+      )}
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 grid-site">
+        {FEATURES.map((f) => (
+          <div key={f.title} className="card-surface-hover group card-pad flex flex-col stack-4 h-full">
+            <IconTile icon={f.icon} size={18} />
+            <div className="flex-1 stack-2">
+              <h3 className="font-display text-base font-bold text-foreground">{f.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-4 border-t border-border">
+              {f.tags.map((tag) => (
+                <span key={tag} className="pair-tag">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
-    </section>
+    </PageSection>
   );
 }

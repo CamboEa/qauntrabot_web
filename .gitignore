@@ -35,7 +35,9 @@ yarn-error.log*
 
 # Firebase service account (never commit)
 firebase-service-account.json
+qauntrabot-firebase-adminsdk*.json
 *-firebase-adminsdk-*.json
+/secrets/
 
 # vercel
 .vercel

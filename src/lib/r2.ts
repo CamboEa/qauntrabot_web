@@ -98,9 +98,16 @@ export async function objectExists(key: string): Promise<boolean> {
 
 // ─── Key helpers (all files live under bots/{folder-name}/) ───────────────────
 
+export const EA_FILE_EXTENSIONS = ["ex4", "ex5", "mq5"] as const;
+
 function extFromFilename(name: string, fallback: string): string {
   const m = name.match(/\.([a-z0-9]+)$/i);
   return m ? m[1].toLowerCase() : fallback;
+}
+
+export function isAllowedEaFilename(filename: string): boolean {
+  const ext = extFromFilename(filename, "");
+  return (EA_FILE_EXTENSIONS as readonly string[]).includes(ext);
 }
 
 function botRoot(folder: string): string {
@@ -110,8 +117,11 @@ function botRoot(folder: string): string {
 export const r2Keys = {
   botImage: (folder: string, filename: string) =>
     `${botRoot(folder)}/cover.${extFromFilename(filename, "webp")}`,
-  botFile: (folder: string, platform: "MT4" | "MT5") =>
-    `${botRoot(folder)}/ea-${platform.toLowerCase()}.ex${platform === "MT5" ? "5" : "4"}`,
+  botFile: (folder: string, filename: string) => {
+    const ext = extFromFilename(filename, "ex5");
+    const safeExt = (EA_FILE_EXTENSIONS as readonly string[]).includes(ext) ? ext : "ex5";
+    return `${botRoot(folder)}/ea.${safeExt}`;
+  },
   proofBacktestImage: (folder: string, index: number, filename: string) =>
     `${botRoot(folder)}/proof/backtest/images/img-${index}.${extFromFilename(filename, "png")}`,
   proofBacktestReport: (folder: string, filename: string) =>

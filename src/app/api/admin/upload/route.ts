@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { resolveBotStorageFolder } from "@/lib/bot-storage";
-import { uploadToR2, r2Keys } from "@/lib/r2";
+import { uploadToR2, r2Keys, isAllowedEaFilename } from "@/lib/r2";
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req);
@@ -48,8 +48,14 @@ export async function POST(req: NextRequest) {
           contentType = file.type || "image/png";
           break;
         case "bot-file":
-          key = r2Keys.botFile(folder, platform);
-          contentType = "application/octet-stream";
+          if (!isAllowedEaFilename(filename)) {
+            return NextResponse.json(
+              { error: "EA file must be .ex4, .ex5, or .mq5" },
+              { status: 400 }
+            );
+          }
+          key = r2Keys.botFile(folder, filename);
+          contentType = file.type || "application/octet-stream";
           break;
         case "proof-backtest-image":
           key = r2Keys.proofBacktestImage(folder, index, filename);

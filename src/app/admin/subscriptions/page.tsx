@@ -4,32 +4,34 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { adminJson } from "@/lib/admin-client";
-import type { Subscription, PlanTier, UserProfile, BotDoc } from "@/lib/firestore";
+import {
+  BILLING_PERIOD_LABEL,
+  computeValidUntil,
+  type BillingPeriod,
+} from "@/lib/subscription-plans";
+import type { Subscription, UserProfile } from "@/lib/firestore";
+import { formatDisplayDate } from "@/lib/dates";
 
 export default function AdminSubscriptionsPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [bots, setBots] = useState<BotDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [uid, setUid] = useState("");
-  const [plan, setPlan] = useState<PlanTier>("starter");
-  const [botIds, setBotIds] = useState<string[]>([]);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const [mtAccount, setMtAccount] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [s, u, b] = await Promise.all([
+      const [s, u] = await Promise.all([
         adminJson<Subscription[]>("/api/admin/subscriptions"),
         adminJson<UserProfile[]>("/api/admin/users"),
-        adminJson<BotDoc[]>("/api/admin/bots"),
       ]);
       setSubs(s);
       setUsers(u);
-      setBots(b);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -50,19 +52,21 @@ export default function AdminSubscriptionsPage() {
     }
     setSaving(true);
     try {
+      const validUntil = computeValidUntil(billingPeriod);
       await adminJson("/api/admin/subscriptions", {
         method: "POST",
         body: JSON.stringify({
           uid,
-          plan,
-          botIds: plan === "institutional" ? bots.map((b) => b.id) : botIds,
+          billingPeriod,
+          status: "active",
           mtAccountNumber: mtAccount,
+          validUntil: validUntil.toISOString(),
         }),
       });
       setModalOpen(false);
       setUid("");
-      setBotIds([]);
       setMtAccount("");
+      setBillingPeriod("monthly");
       load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Save failed");
@@ -81,23 +85,17 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const toggleBot = (id: string) => {
-    setBotIds((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
-    );
-  };
-
   return (
     <AdminShell
       title="Subscriptions"
-      description="Assign plans and bot access to users."
+      description="All-access plans — active subscribers can use every bot."
       action={
         <button
           type="button"
           onClick={() => setModalOpen(true)}
           className="btn-primary-brand text-sm cursor-pointer"
         >
-          <Plus size={16} /> Assign plan
+          <Plus size={16} /> Assign subscription
         </button>
       }
     >
@@ -111,8 +109,10 @@ export default function AdminSubscriptionsPage() {
             <thead>
               <tr className="border-b border-border bg-secondary/50 text-left text-xs font-data uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">Plan</th>
-                <th className="px-4 py-3">Bots</th>
+                <th className="px-4 py-3">Billing</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Valid until</th>
+                <th className="px-4 py-3">Access</th>
                 <th className="px-4 py-3">License</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -120,13 +120,13 @@ export default function AdminSubscriptionsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               ) : subs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     No subscriptions yet.
                   </td>
                 </tr>
@@ -137,10 +137,10 @@ export default function AdminSubscriptionsPage() {
                       <p className="font-medium text-foreground">{userEmail(s.uid)}</p>
                       <p className="text-xs font-data text-muted-foreground">{s.uid}</p>
                     </td>
-                    <td className="px-4 py-3 capitalize">{s.plan}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {s.plan === "institutional" ? "All bots" : s.botIds.join(", ") || "—"}
-                    </td>
+                    <td className="px-4 py-3">{BILLING_PERIOD_LABEL[s.billingPeriod]}</td>
+                    <td className="px-4 py-3 capitalize">{s.status}</td>
+                    <td className="px-4 py-3 font-data text-xs">{formatDisplayDate(s.validUntil)}</td>
+                    <td className="px-4 py-3 text-xs text-profit font-medium">All bots</td>
                     <td className="px-4 py-3 font-data text-xs">{s.licenseKey || "—"}</td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -163,6 +163,10 @@ export default function AdminSubscriptionsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm">
           <div className="card-surface w-full max-w-md card-pad stack-4">
             <h2 className="font-display text-lg font-bold">Assign subscription</h2>
+            <p className="text-sm text-muted-foreground">
+              Grants access to every bot until the period ends. Billing period sets expiry
+              automatically.
+            </p>
 
             <div className="stack-2">
               <label className="text-xs font-data uppercase text-muted-foreground">User</label>
@@ -181,39 +185,17 @@ export default function AdminSubscriptionsPage() {
             </div>
 
             <div className="stack-2">
-              <label className="text-xs font-data uppercase text-muted-foreground">Plan</label>
+              <label className="text-xs font-data uppercase text-muted-foreground">Billing period</label>
               <select
-                value={plan}
-                onChange={(e) => setPlan(e.target.value as PlanTier)}
+                value={billingPeriod}
+                onChange={(e) => setBillingPeriod(e.target.value as BillingPeriod)}
                 className="w-full rounded-xl border border-border px-3 py-2 text-sm"
               >
-                <option value="starter">Starter</option>
-                <option value="pro">Pro</option>
-                <option value="institutional">Institutional</option>
+                <option value="monthly">Monthly (1 month)</option>
+                <option value="semiannual">6 months</option>
+                <option value="yearly">Yearly (12 months)</option>
               </select>
             </div>
-
-            {plan !== "institutional" && (
-              <div className="stack-2">
-                <label className="text-xs font-data uppercase text-muted-foreground">Bot access</label>
-                <div className="flex flex-wrap gap-2">
-                  {bots.map((b) => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => toggleBot(b.id)}
-                      className={`text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
-                        botIds.includes(b.id)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border text-muted-foreground"
-                      }`}
-                    >
-                      {b.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="stack-2">
               <label className="text-xs font-data uppercase text-muted-foreground">MT account # (optional)</label>

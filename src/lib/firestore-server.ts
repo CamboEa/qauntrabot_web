@@ -4,18 +4,38 @@
  */
 import { FieldValue, type DocumentData } from "firebase-admin/firestore";
 import { getAdminFirestore } from "./firebase-admin";
+import {
+  normalizeBillingPeriod,
+  isSubscriptionActive,
+  computeValidUntil,
+  type SubscriptionStatus,
+} from "./subscription-plans";
 import type {
   BotDoc,
   BotInput,
   BotStatus,
+  BillingPeriod,
   PlanTier,
   RiskLevel,
   Subscription,
   SubscriptionInput,
+  SubscriptionPlanDoc,
   UserProfile,
 } from "./firestore";
 
-export type { BotDoc, BotInput, BotStatus, PlanTier, RiskLevel, Subscription, SubscriptionInput, UserProfile };
+export type {
+  BotDoc,
+  BotInput,
+  BotStatus,
+  BillingPeriod,
+  PlanTier,
+  RiskLevel,
+  Subscription,
+  SubscriptionInput,
+  SubscriptionPlanDoc,
+  SubscriptionStatus,
+  UserProfile,
+};
 
 function db() {
   return getAdminFirestore();
@@ -30,6 +50,28 @@ function toDate(value: unknown): Date {
     return new Date(v._seconds * 1000);
   }
   return new Date();
+}
+
+// ─── Subscription plans ───────────────────────────────────────────────────────
+
+export async function getAllPlans(): Promise<SubscriptionPlanDoc[]> {
+  const snap = await db().collection("plans").orderBy("sortOrder", "asc").get();
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id as BillingPeriod,
+      label: data.label as string,
+      priceTotal: data.priceTotal as number,
+      pricePerMonth: data.pricePerMonth as number,
+      periodLabel: data.periodLabel as string,
+      description: data.description as string,
+      savingsNote: (data.savingsNote as string | null) ?? undefined,
+      highlighted: Boolean(data.highlighted),
+      sortOrder: data.sortOrder as number | undefined,
+      createdAt: data.createdAt ? toDate(data.createdAt) : undefined,
+      updatedAt: data.updatedAt ? toDate(data.updatedAt) : undefined,
+    };
+  });
 }
 
 // ─── Bots ─────────────────────────────────────────────────────────────────────
@@ -111,37 +153,56 @@ export async function createUserProfile(
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
 
+function parseSubscriptionDoc(uid: string, data: DocumentData): Subscription {
+  const validUntil = data.validUntil ? toDate(data.validUntil) : null;
+  const billingPeriod = normalizeBillingPeriod(
+    data.billingPeriod as string | undefined,
+    data.plan as string | undefined
+  );
+  const rawStatus = (data.status as SubscriptionStatus) ?? "active";
+  let status: SubscriptionStatus = rawStatus;
+  if (rawStatus !== "cancelled") {
+    status = isSubscriptionActive(validUntil, "active") ? "active" : "expired";
+  }
+
+  return {
+    uid,
+    billingPeriod,
+    status,
+    mtAccountNumber: (data.mtAccountNumber as string) ?? "",
+    licenseKey: (data.licenseKey as string) ?? "",
+    validUntil,
+    createdAt: toDate(data.createdAt),
+    plan: data.plan as PlanTier | undefined,
+    botIds: (data.botIds as string[]) ?? [],
+  };
+}
+
 export async function getAllSubscriptions(): Promise<Subscription[]> {
   const snap = await db().collection("subscriptions").get();
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      uid: d.id,
-      plan: data.plan as PlanTier,
-      botIds: (data.botIds as string[]) ?? [],
-      mtAccountNumber: (data.mtAccountNumber as string) ?? "",
-      licenseKey: (data.licenseKey as string) ?? "",
-      validUntil: data.validUntil ? toDate(data.validUntil) : null,
-      createdAt: toDate(data.createdAt),
-    };
-  });
+  return snap.docs.map((d) => parseSubscriptionDoc(d.id, d.data()));
 }
 
 export async function getUserSubscription(uid: string): Promise<Subscription | null> {
   const snap = await db().collection("subscriptions").doc(uid).get();
   if (!snap.exists) return null;
-  return { uid, ...snap.data() } as Subscription;
+  return parseSubscriptionDoc(uid, snap.data()!);
 }
 
 export async function upsertSubscription(uid: string, data: SubscriptionInput): Promise<void> {
   const ref = db().collection("subscriptions").doc(uid);
   const existing = await ref.get();
+  const validUntil =
+    data.validUntil !== undefined
+      ? data.validUntil
+      : computeValidUntil(data.billingPeriod);
+
   const payload: DocumentData = {
-    plan: data.plan,
-    botIds: data.botIds,
+    billingPeriod: data.billingPeriod,
+    status: data.status ?? "active",
     mtAccountNumber: data.mtAccountNumber ?? "",
     licenseKey: data.licenseKey ?? generateLicenseKey(),
-    validUntil: data.validUntil ?? null,
+    validUntil,
     updatedAt: FieldValue.serverTimestamp(),
   };
 

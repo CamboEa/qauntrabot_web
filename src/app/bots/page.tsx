@@ -14,7 +14,7 @@ export default function BotsPage() {
         eyebrow: "Strategy Catalogue",
         title: "Trading",
         accent: "bots.",
-        description: "Six Expert Advisor modules for gold, forex, indices, and more — deployable on MT4 or MT5 with isolated risk parameters.",
+        description: "Expert Advisor modules for gold, forex, and more — deployable on MT4 or MT5 with isolated risk parameters.",
         cta: { label: "View pricing", href: "/pricing" },
         secondaryCta: { label: "Live results", href: "/performance" },
       }}

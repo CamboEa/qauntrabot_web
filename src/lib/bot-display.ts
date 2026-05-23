@@ -43,6 +43,14 @@ export function publicAssetUrl(key: string | undefined): string | null {
   return `${base.replace(/\/$/, "")}/${key.replace(/^\//, "")}`;
 }
 
+/** URL for displaying an R2 object in img tags (public CDN or signed proxy). */
+export function botImageDisplayUrl(key: string | undefined): string | null {
+  if (!key?.trim()) return null;
+  const publicUrl = publicAssetUrl(key);
+  if (publicUrl) return publicUrl;
+  return `/api/media?key=${encodeURIComponent(key.replace(/^\//, ""))}`;
+}
+
 export type SerializableBot = Omit<BotDoc, "createdAt" | "updatedAt"> & {
   createdAt: string;
   updatedAt: string;

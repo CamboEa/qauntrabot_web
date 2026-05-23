@@ -1,7 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Shield, Zap, CheckCircle2 } from "lucide-react";
-import TradingViewChart from "@/components/shared/TradingViewChart";
-import TradingViewTickerTape from "@/components/shared/TradingViewTickerTape";
 
 const TRUST_ITEMS = [
   { icon: TrendingUp, label: "MT4 / MT5 Compatible" },
@@ -19,22 +18,19 @@ export default function HeroSection() {
   return (
     <section
       id="home"
-      className="relative overflow-hidden section-cream ring-motif min-h-[calc(100dvh-5rem)] flex items-center"
+      className="relative overflow-x-clip section-cream ring-motif hero-fullscreen"
     >
       <div
         className="absolute -right-32 top-1/4 w-[420px] h-[420px] rounded-full border-[3rem] border-primary/[0.04] pointer-events-none hero-ring-float"
         aria-hidden
       />
 
-      <div className="relative container-site w-full section-y">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+      <div className="relative container-site w-full">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-center">
           <div className="stack-6 order-2 lg:order-1">
             <div className="stack-3">
               <h1 className="hero-title hero-enter hero-d-0">
                 Automate your trading.
-                <span className="block section-title-accent mt-2 hero-accent-in">
-                  Maximize precision.
-                </span>
               </h1>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg hero-enter hero-d-1">
                 Institutional-grade Expert Advisors for MT4 and MT5 — sub-millisecond execution, 24/7 operation, and built-in risk controls.
@@ -97,27 +93,17 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="order-1 lg:order-2 w-full hero-card-enter hero-d-chart">
-            <div className="card-surface !rounded-none overflow-hidden shadow-[0_16px_48px_rgba(11,31,61,0.1)] transition-shadow duration-500 hover:shadow-[0_20px_56px_rgba(11,31,61,0.14)] [&_.tradingview-widget-container]:!rounded-none [&_iframe]:!rounded-none">
-              <TradingViewTickerTape />
-              <TradingViewChart />
-              <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
-                {[
-                  { label: "Total Gain", value: "+247.3%", color: "text-profit" },
-                  { label: "Win Rate", value: "73.2%", color: "text-foreground" },
-                  { label: "Profit Factor", value: "2.84×", color: "text-profit" },
-                ].map(({ label, value, color }, i) => (
-                  <div
-                    key={label}
-                    className={`p-4 text-center bg-card hero-stat-in ${i === 0 ? "hero-d-7" : i === 1 ? "hero-d-8" : "hero-d-9"}`}
-                  >
-                    <div className={`text-base font-bold font-data ${color}`}>{value}</div>
-                    <div className="text-[0.625rem] text-muted-foreground mt-1 uppercase tracking-wide font-data">
-                      {label}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="order-1 lg:order-2 w-full hero-card-enter hero-d-chart flex justify-center lg:justify-end lg:-me-6 xl:-me-10">
+            <div className="hero-mt5-visual w-full max-w-2xl sm:max-w-3xl lg:w-[112%] lg:max-w-[44rem] xl:max-w-[52rem]">
+              <Image
+                src="/asset/mt5screen.png"
+                alt="MetaTrader 5 platform showing XAUUSD chart, market watch, and algo trading tools"
+                width={1200}
+                height={750}
+                className="w-full h-auto drop-shadow-[0_24px_56px_rgba(11,31,61,0.18)]"
+                priority
+                sizes="(max-width: 1024px) min(100vw - 2.5rem, 48rem), 52rem"
+              />
             </div>
           </div>
         </div>

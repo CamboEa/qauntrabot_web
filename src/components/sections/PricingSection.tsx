@@ -1,208 +1,157 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
-
-type Tier = {
-  name: string;
-  badge?: string;
-  price: { monthly: number; annual: number; lifetime?: number };
-  description: string;
-  features: string[];
-  cta: string;
-  highlighted: boolean;
-};
-
-const TIERS: Tier[] = [
-  {
-    name: "Starter",
-    price: { monthly: 79, annual: 59, lifetime: 299 },
-    description: "Single-strategy access for traders beginning their automation journey.",
-    features: [
-      "1 MT4 or MT5 License",
-      "XAUUSD Grid Strategy",
-      "Standard parameter file",
-      "Email support (48h response)",
-      "Monthly build updates",
-      "Basic setup documentation",
-      "MyFxBook integration guide",
-    ],
-    cta: "Get Starter",
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    badge: "Most Popular",
-    price: { monthly: 149, annual: 109, lifetime: 499 },
-    description: "Full strategy suite for active traders seeking maximum market coverage.",
-    features: [
-      "3 MT4 / MT5 Licenses",
-      "All 3 Strategy Modules",
-      "Priority support (4h response)",
-      "Weekly build updates",
-      "VPS optimization guide",
-      "Advanced parameter configuration",
-      "Telegram alert integration",
-      "Portfolio risk dashboard",
-      "1-on-1 onboarding call (30 min)",
-    ],
-    cta: "Get Pro",
-    highlighted: true,
-  },
-  {
-    name: "Institutional",
-    price: { monthly: 399, annual: 299, lifetime: 1499 },
-    description: "Unlimited deployment for proprietary trading desks and fund managers.",
-    features: [
-      "Unlimited MT4 / MT5 Licenses",
-      "All Strategies + Custom Tuning",
-      "Dedicated account manager",
-      "Same-day build updates",
-      "White-label option available",
-      "Strategy consultation calls (monthly)",
-      "Custom parameter profiles",
-      "FIX API execution support",
-      "Risk committee reporting templates",
-      "Priority co-location setup",
-    ],
-    cta: "Contact Sales",
-    highlighted: false,
-  },
-];
-
-type Billing = "monthly" | "annual" | "lifetime";
+import PageSection from "@/components/shared/PageSection";
+import type { SubscriptionPlanDoc } from "@/lib/firestore";
+import {
+  ALL_ACCESS_FEATURES,
+  BILLING_PERIOD_LABEL,
+  getDefaultPlans,
+  type BillingPeriod,
+} from "@/lib/subscription-plans";
 
 export default function PricingSection({ hideHeader = false }: { hideHeader?: boolean }) {
-  const [billing, setBilling] = useState<Billing>("annual");
+  const [plans, setPlans] = useState<SubscriptionPlanDoc[]>(getDefaultPlans());
+  const [loading, setLoading] = useState(true);
 
-  const getPrice = (tier: Tier): string => {
-    if (billing === "lifetime" && tier.price.lifetime) return `$${tier.price.lifetime}`;
-    if (billing === "annual") return `$${tier.price.annual}`;
-    return `$${tier.price.monthly}`;
-  };
-
-  const getPeriod = (): string => (billing === "lifetime" ? "one-time" : "/ mo");
-
-  const getSavings = (tier: Tier): string | null => {
-    if (billing === "annual") {
-      const saved = Math.round(((tier.price.monthly - tier.price.annual) / tier.price.monthly) * 100);
-      return `Save ${saved}%`;
-    }
-    return null;
-  };
+  useEffect(() => {
+    fetch("/api/plans")
+      .then((r) => r.json())
+      .then((data: SubscriptionPlanDoc[]) => {
+        if (Array.isArray(data) && data.length > 0) setPlans(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
-    <section id="pricing" className={`bg-background ${hideHeader ? "page-body-y" : "section-y"}`}>
-      <div className="container-site stack-6">
-        {!hideHeader && (
-          <div className="headline-gap flex justify-center">
-            <SectionHeader
-              align="center"
-              eyebrow="Instant Digital Delivery"
-              title="Transparent pricing."
-              accent="Immediate access."
-              description="No hidden fees or performance commissions. Hardware-locked EA delivered instantly."
-            />
-          </div>
-        )}
-
-        <div className="flex justify-center">
-          <div className="tab-group">
-            {(["monthly", "annual", "lifetime"] as Billing[]).map((b) => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => setBilling(b)}
-                className={`relative capitalize ${billing === b ? "tab-pill-active" : ""}`}
-              >
-                {b}
-                {b === "annual" && billing !== "annual" && (
-                  <span className="absolute -top-2.5 -right-2 text-[0.6rem] bg-profit text-white px-1.5 py-0.5 rounded-full font-data leading-none">
-                    Best
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+    <PageSection id="pricing" underHero={hideHeader} standalone={!hideHeader}>
+      {!hideHeader && (
+        <div className="headline-gap flex justify-center">
+          <SectionHeader
+            align="center"
+            eyebrow="All-access subscription"
+            title="One plan."
+            accent="Every bot."
+            description="Same full catalogue access — choose monthly, 6-month, or yearly billing."
+          />
         </div>
+      )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 grid-site items-stretch">
-          {TIERS.map((tier) => {
-            const savings = getSavings(tier);
-            return (
-              <div
-                key={tier.name}
-                className={`relative flex flex-col rounded-2xl h-full ${
-                  tier.highlighted ? "pricing-featured bg-primary text-primary-foreground" : "card-surface"
-                }`}
-              >
-                {tier.badge && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                    <span className="bg-card text-primary text-xs font-bold px-3 py-1 rounded-full border border-border font-data uppercase">
-                      {tier.badge}
-                    </span>
-                  </div>
-                )}
+      <div
+        className={`grid md:grid-cols-3 grid-site items-stretch max-w-5xl mx-auto w-full transition-opacity duration-300 ${
+          loading ? "opacity-60" : "opacity-100"
+        }`}
+      >
+        {plans.map((plan) => {
+          const period = plan.id as BillingPeriod;
+          const featured = Boolean(plan.highlighted);
 
-                <div className="card-pad flex flex-col flex-1 stack-4">
-                  <div className="stack-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-display text-xl font-bold">{tier.name}</h3>
-                      {savings && (
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 font-data ${tier.highlighted ? "bg-primary-foreground/15" : "bg-profit/10 text-profit"}`}>
-                          {savings}
-                        </span>
-                      )}
-                    </div>
-                    <p className={`text-sm leading-relaxed ${tier.highlighted ? "text-primary-foreground/75" : "text-muted-foreground"}`}>
-                      {tier.description}
-                    </p>
-                  </div>
+          return (
+            <div
+              key={plan.id}
+              className={`relative flex flex-col rounded-2xl h-full ${
+                featured
+                  ? "pricing-featured bg-primary text-primary-foreground shadow-[0_20px_48px_rgba(11,31,61,0.18)] md:-translate-y-1"
+                  : "card-surface"
+              }`}
+            >
+              {featured && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <span className="bg-card text-primary text-xs font-bold px-3 py-1 rounded-full border border-border font-data uppercase">
+                    Best value
+                  </span>
+                </div>
+              )}
 
-                  <div className={`pb-4 border-b ${tier.highlighted ? "border-primary-foreground/15" : "border-border"}`}>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-display text-3xl md:text-4xl font-bold tracking-tight">{getPrice(tier)}</span>
-                      <span className={`text-sm font-data ${tier.highlighted ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                        {getPeriod()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href="/register"
-                    className={`flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-full cursor-pointer ${
-                      tier.highlighted ? "bg-primary-foreground text-primary" : "btn-primary-brand w-full"
+              <div className={`card-pad flex flex-col flex-1 stack-4 ${featured ? "pt-8" : ""}`}>
+                <div className="stack-2">
+                  <h3 className="font-display text-xl font-bold">
+                    {plan.label || BILLING_PERIOD_LABEL[period]}
+                  </h3>
+                  <p
+                    className={`text-sm leading-relaxed min-h-[3.25rem] ${
+                      featured ? "text-primary-foreground/75" : "text-muted-foreground"
                     }`}
                   >
-                    {tier.cta} <ArrowRight size={16} />
-                  </Link>
-
-                  <ul className="flex flex-col gap-2.5 flex-1">
-                    {tier.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5">
-                        <Check size={15} className={`shrink-0 mt-0.5 ${tier.highlighted ? "text-profit" : "text-primary"}`} />
-                        <span className={`text-sm leading-snug ${tier.highlighted ? "text-primary-foreground/85" : "text-muted-foreground"}`}>
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                    {plan.description}
+                  </p>
+                  {plan.savingsNote && (
+                    <p className="text-xs font-data font-semibold text-profit">{plan.savingsNote}</p>
+                  )}
                 </div>
 
-                <p className={`text-xs text-center pb-5 font-data ${tier.highlighted ? "text-primary-foreground/50" : "text-muted-foreground"}`}>
-                  Instant delivery · Hardware-locked
-                </p>
-              </div>
-            );
-          })}
-        </div>
+                <div
+                  className={`pb-4 border-b ${
+                    featured ? "border-primary-foreground/15" : "border-border"
+                  }`}
+                >
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-display text-3xl md:text-4xl font-bold tracking-tight">
+                      ${plan.priceTotal}
+                    </span>
+                    <span
+                      className={`text-sm font-data ${
+                        featured ? "text-primary-foreground/60" : "text-muted-foreground"
+                      }`}
+                    >
+                      {plan.periodLabel}
+                    </span>
+                  </div>
+                  {period !== "monthly" && (
+                    <p
+                      className={`text-xs font-data mt-1 ${
+                        featured ? "text-primary-foreground/55" : "text-muted-foreground"
+                      }`}
+                    >
+                      ≈ ${plan.pricePerMonth}/mo
+                    </p>
+                  )}
+                </div>
 
-        <p className="text-center text-sm text-muted-foreground max-w-lg mx-auto">
-          All plans include a <span className="font-semibold text-foreground">7-day money-back guarantee</span>. Secure checkout via Stripe.
-        </p>
+                <Link
+                  href={`/register?plan=${period}`}
+                  className={`flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-full cursor-pointer mt-auto ${
+                    featured
+                      ? "bg-primary-foreground text-primary"
+                      : "btn-primary-brand w-full"
+                  }`}
+                >
+                  Subscribe
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+
+              <p
+                className={`text-xs text-center pb-5 font-data ${
+                  featured ? "text-primary-foreground/50" : "text-muted-foreground"
+                }`}
+              >
+                7-day money-back
+              </p>
+            </div>
+          );
+        })}
       </div>
-    </section>
+
+      <div className="max-w-2xl mx-auto w-full card-surface card-pad stack-3">
+        <p className="stat-label text-center">Everything included on every plan</p>
+        <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+          {ALL_ACCESS_FEATURES.map((feature) => (
+            <li key={feature} className="flex items-start gap-2.5">
+              <Check size={15} className="shrink-0 mt-0.5 text-primary" />
+              <span className="text-sm text-muted-foreground leading-snug">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <p className="text-center text-sm text-muted-foreground max-w-lg mx-auto">
+        Secure checkout via Stripe (coming soon). Cancel anytime.
+      </p>
+    </PageSection>
   );
 }

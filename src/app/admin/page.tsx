@@ -9,7 +9,13 @@ import { adminJson } from "@/lib/admin-client";
 type Stats = {
   bots: { total: number; live: number };
   users: { total: number };
-  subscriptions: { total: number; starter: number; pro: number; institutional: number };
+  subscriptions: {
+    total: number;
+    active: number;
+    monthly: number;
+    semiannual: number;
+    yearly: number;
+  };
 };
 
 export default function AdminDashboardPage() {
@@ -41,7 +47,7 @@ export default function AdminDashboardPage() {
         {
           label: "Active subscriptions",
           value: stats.subscriptions.total,
-          sub: `${stats.subscriptions.pro} pro · ${stats.subscriptions.starter} starter`,
+          sub: `${stats.subscriptions.active} active · ${stats.subscriptions.monthly} mo / ${stats.subscriptions.semiannual} 6mo / ${stats.subscriptions.yearly} yr`,
           href: "/admin/subscriptions",
           icon: CreditCard,
         },

@@ -18,8 +18,9 @@ async function withFallback<T>(serverFn: () => Promise<T>, clientFn: () => Promi
   }
 }
 
-export type { BotDoc, BotInput, SubscriptionInput } from "./firestore";
+export type { BotDoc, BotInput, SubscriptionInput, SubscriptionPlanDoc } from "./firestore";
 
+export const getAllPlans = () => withFallback(server.getAllPlans, client.getAllPlans);
 export const getAllBots = () => withFallback(server.getAllBots, client.getAllBots);
 export const getBot = (id: string) => withFallback(() => server.getBot(id), () => client.getBot(id));
 export const createBot = (id: string, data: Parameters<typeof server.createBot>[1]) =>
