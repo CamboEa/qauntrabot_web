@@ -13,6 +13,9 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { parseTradingSnapshot } from "./trading-snapshot-parse";
+
+export { parseTradingSnapshot };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -103,6 +106,42 @@ export type BotDoc = {
   updatedAt: Date;
 };
 
+export type BalanceHistoryPoint = {
+  balance: number;
+  at: Date;
+};
+
+/** Mirrors the EA on-chart dashboard (SuperFiveCentBot sections). */
+export type BotRuntimeStatus = {
+  botName?: string;
+  symbol: string;
+  serverTime?: string;
+  todayPnl: number;
+  dayTarget: number;
+  floatingPnl: number;
+  marketOpen: boolean;
+  marketBlockReason?: string;
+  emaPeriod?: number;
+  emaValue?: number | null;
+  emaDistancePips?: number | null;
+  emaSlopePips?: number | null;
+  emaTrend?: string | null;
+  buyFilter?: string | null;
+  sellFilter?: string | null;
+  buyPositions: number;
+  sellPositions: number;
+  buyLots: number;
+  sellLots: number;
+  buyAvgEntry?: number | null;
+  sellAvgEntry?: number | null;
+  buyPnl: number;
+  sellPnl: number;
+  buySlArmed: boolean;
+  sellSlArmed: boolean;
+  buyHedgeOverride: boolean;
+  sellHedgeOverride: boolean;
+};
+
 /** Live stats reported from MT5 Expert Advisor (WebRequest). */
 export type TradingSnapshot = {
   balance: number;
@@ -110,6 +149,12 @@ export type TradingSnapshot = {
   profit: number;
   currency: string;
   server?: string;
+  /** Worst floating P/L (≤ 0) while EA has been attached this session */
+  maxFloatingLoss?: number;
+  /** Balance samples for equity curve (newest last) */
+  balanceHistory?: BalanceHistoryPoint[];
+  /** Live bot dashboard: trend, market hours, grid */
+  botStatus?: BotRuntimeStatus | null;
   updatedAt: Date;
 };
 
@@ -123,26 +168,6 @@ export type UserProfile = {
   createdAt: Date;
   tradingSnapshot?: TradingSnapshot | null;
 };
-
-function parseTradingSnapshot(data: unknown): TradingSnapshot | null {
-  if (!data || typeof data !== "object") return null;
-  const s = data as Record<string, unknown>;
-  const updatedAt = s.updatedAt;
-  const updated = updatedAt instanceof Date
-    ? updatedAt
-    : updatedAt && typeof updatedAt === "object" && "toDate" in updatedAt
-      ? (updatedAt as { toDate: () => Date }).toDate()
-      : null;
-  if (!updated) return null;
-  return {
-    balance: Number(s.balance) || 0,
-    equity: Number(s.equity) || 0,
-    profit: Number(s.profit) || 0,
-    currency: (s.currency as string) || "USD",
-    server: (s.server as string) || undefined,
-    updatedAt: updated,
-  };
-}
 
 export type Subscription = {
   uid: string;

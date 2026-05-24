@@ -26,6 +26,12 @@ export async function GET(req: Request) {
             profit: snap.profit,
             currency: snap.currency,
             server: snap.server ?? null,
+            maxFloatingLoss: snap.maxFloatingLoss ?? null,
+            balanceHistory: (snap.balanceHistory ?? []).map((p) => ({
+              balance: p.balance,
+              at: p.at.toISOString(),
+            })),
+            botStatus: snap.botStatus ?? null,
             updatedAt: snap.updatedAt.toISOString(),
           }
         : null,

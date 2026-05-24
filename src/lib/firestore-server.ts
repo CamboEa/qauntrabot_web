@@ -10,6 +10,8 @@ import {
   removeLicenseIndex,
   setLicenseIndex,
 } from "./license-index";
+import { botStatusChanged, parseTradingSnapshot } from "./trading-snapshot-parse";
+import type { BalanceHistoryPoint } from "./firestore";
 import {
   normalizeBillingPeriod,
   isSubscriptionActive,
@@ -49,19 +51,22 @@ function db() {
   return getAdminFirestore();
 }
 
-function parseTradingSnapshot(data: unknown): TradingSnapshot | null {
-  if (!data || typeof data !== "object") return null;
-  const s = data as Record<string, unknown>;
-  const updated = toDate(s.updatedAt);
-  if (!updated) return null;
-  return {
-    balance: Number(s.balance) || 0,
-    equity: Number(s.equity) || 0,
-    profit: Number(s.profit) || 0,
-    currency: (s.currency as string) || "USD",
-    server: (s.server as string) || undefined,
-    updatedAt: updated,
-  };
+const BALANCE_HISTORY_MAX = 120;
+
+function appendBalanceHistory(
+  prev: BalanceHistoryPoint[],
+  balance: number,
+): BalanceHistoryPoint[] {
+  const last = prev[prev.length - 1];
+  if (last && Math.abs(last.balance - balance) < 0.01) return prev;
+  const next = [...prev, { balance, at: new Date() }];
+  return next.length > BALANCE_HISTORY_MAX ? next.slice(-BALANCE_HISTORY_MAX) : next;
+}
+
+function mergeMaxFloatingLoss(prev: number | undefined, incoming: number | undefined): number | undefined {
+  if (incoming === undefined || !Number.isFinite(incoming)) return prev;
+  if (prev === undefined) return incoming;
+  return Math.min(prev, incoming);
 }
 
 function toDate(value: unknown): Date {
@@ -179,7 +184,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 
 export async function updateTradingSnapshot(
   uid: string,
-  snapshot: Omit<TradingSnapshot, "updatedAt">,
+  snapshot: Omit<TradingSnapshot, "updatedAt" | "balanceHistory">,
 ): Promise<void> {
   const ref = db().collection("users").doc(uid);
   const existing = await ref.get();
@@ -187,20 +192,38 @@ export async function updateTradingSnapshot(
     ? parseTradingSnapshot(existing.data()?.tradingSnapshot)
     : null;
 
+  const balanceHistory = appendBalanceHistory(prev?.balanceHistory ?? [], snapshot.balance);
+  const maxFloatingLoss = mergeMaxFloatingLoss(prev?.maxFloatingLoss, snapshot.maxFloatingLoss);
+
+  const botStatus = snapshot.botStatus ?? prev?.botStatus ?? null;
+
   if (
     prev &&
     Math.abs(prev.balance - snapshot.balance) < 0.01 &&
     Math.abs(prev.equity - snapshot.equity) < 0.01 &&
     Math.abs(prev.profit - snapshot.profit) < 0.01 &&
     prev.currency === snapshot.currency &&
-    (prev.server ?? "") === (snapshot.server ?? "")
+    (prev.server ?? "") === (snapshot.server ?? "") &&
+    Math.abs((prev.maxFloatingLoss ?? 0) - (maxFloatingLoss ?? 0)) < 0.01 &&
+    (prev.balanceHistory?.length ?? 0) === balanceHistory.length &&
+    !botStatusChanged(prev.botStatus, botStatus)
   ) {
     return;
   }
 
   await ref.update({
     tradingSnapshot: {
-      ...snapshot,
+      balance: snapshot.balance,
+      equity: snapshot.equity,
+      profit: snapshot.profit,
+      currency: snapshot.currency,
+      server: snapshot.server,
+      maxFloatingLoss,
+      balanceHistory: balanceHistory.map((p) => ({
+        balance: p.balance,
+        at: p.at,
+      })),
+      botStatus,
       updatedAt: FieldValue.serverTimestamp(),
     },
   });

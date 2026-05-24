@@ -6,6 +6,7 @@ import {
 } from "@/lib/firestore-api";
 import { normalizeLicenseKey, verifyLicenseForAccount } from "@/lib/license-verify";
 import { normalizeMtAccountNumber } from "@/lib/mt-account";
+import { parseBotRuntimeStatus } from "@/lib/trading-snapshot-parse";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 type ReportBody = {
@@ -16,6 +17,8 @@ type ReportBody = {
   profit?: number;
   currency?: string;
   server?: string;
+  maxFloatingLoss?: number;
+  botStatus?: Record<string, unknown>;
 };
 
 /** MT5 EA reports live balance/equity (same auth as license verify). */
@@ -55,12 +58,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "balance and equity must be numbers" }, { status: 400 });
     }
 
+    const maxFloatingLoss = Number(body.maxFloatingLoss);
+    const botStatus = body.botStatus ? parseBotRuntimeStatus(body.botStatus) : null;
     await updateTradingSnapshot(subscription!.uid, {
       balance,
       equity,
       profit: Number.isFinite(Number(body.profit)) ? Number(body.profit) : 0,
       currency: (body.currency ?? "USD").trim().slice(0, 8) || "USD",
       server: body.server?.trim().slice(0, 120),
+      maxFloatingLoss: Number.isFinite(maxFloatingLoss) ? maxFloatingLoss : undefined,
+      botStatus: botStatus ?? undefined,
     });
 
     return NextResponse.json({ ok: true });

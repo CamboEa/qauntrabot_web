@@ -154,6 +154,88 @@ bool QauntraBotVerifyLicense(
    return false;
 }
 
+string DayName(int dow);
+void RefreshDayStartEquity();
+void RefreshEmaCache();
+double GetFloatingPnlUsd();
+bool IsNearMarketClose();
+bool IsFridayShutdownActive(string &reason);
+bool IsProfitStopActive(string &reason);
+
+string QauntraBotJsonEscape(string s)
+{
+   string out = s;
+   StringReplace(out, "\\", "\\\\");
+   StringReplace(out, "\"", "\\\"");
+   return out;
+}
+
+string QauntraBotBuildBotStatusJson()
+{
+   RefreshDayStartEquity();
+   RefreshEmaCache();
+   MqlDateTime sdt;
+   TimeToStruct(TimeCurrent(), sdt);
+   string timeStr = DayName(sdt.day_of_week) + " " + TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES);
+   double dayPnl = AccountInfoDouble(ACCOUNT_EQUITY) - g_dayStartEquity;
+   double floatPnl = GetFloatingPnlUsd();
+   if(floatPnl < g_maxFloatingLossAll) g_maxFloatingLossAll = floatPnl;
+   string blockReason = "";
+   bool marketBlocked = IsProfitStopActive(blockReason) || IsFridayShutdownActive(blockReason) || IsNearMarketClose();
+   if(!marketBlocked) blockReason = "";
+   string trendStr = "", buyFilter = "", sellFilter = "";
+   string emaValPart = "null", distPart = "null", slopePart = "null";
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double emaBuffer = EMA_BufferSteps * GridStep * g_pip;
+   double minS = (double)EMA_MinSlopePips;
+   if(g_emaCacheOk)
+   {
+      emaValPart = DoubleToString(g_emaNow, 8);
+      double sp = g_emaSlopePips, dp = (bid - g_emaNow) / g_pip;
+      distPart = DoubleToString(dp, 2);
+      slopePart = DoubleToString(sp, 2);
+      if(sp > minS*2) trendStr = "Strong up";
+      else if(sp > minS) trendStr = "Mild up";
+      else if(sp > 0) trendStr = "Drift up";
+      else if(sp == 0) trendStr = "Flat";
+      else if(sp > -minS) trendStr = "Drift down";
+      else if(sp > -minS*2) trendStr = "Mild down";
+      else trendStr = "Strong down";
+      bool bA = (ask < g_emaNow-emaBuffer), bB = (ask < g_emaNow && sp < -minS);
+      bool sA = (bid > g_emaNow+emaBuffer), sB = (bid > g_emaNow && sp > minS);
+      buyFilter = bA ? "BLK dist" : (bB ? "BLK slope" : "clear");
+      sellFilter = sA ? "BLK dist" : (sB ? "BLK slope" : "clear");
+   }
+   int bCnt=0, sCnt=0;
+   double bLots=0,sLots=0,bWsum=0,sWsum=0,bPnl=0,sPnl=0;
+   double loB=0,hiB=0,hiS=0,loS=0;
+   for(int i=PositionsTotal()-1;i>=0;i--)
+   {
+      ulong tk=PositionGetTicket(i);
+      if(tk==0) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=(long)MagicNumber) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=_Symbol) continue;
+      ENUM_POSITION_TYPE pt=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+      double op=PositionGetDouble(POSITION_PRICE_OPEN);
+      double lt=PositionGetDouble(POSITION_VOLUME);
+      double pn=PositionGetDouble(POSITION_PROFIT)+PositionGetDouble(POSITION_SWAP);
+      if(pt==POSITION_TYPE_BUY) { bCnt++; bLots+=lt; bWsum+=lt*op; bPnl+=pn; if(loB==0||op<loB)loB=op; if(hiB==0||op>hiB)hiB=op; }
+      else { sCnt++; sLots+=lt; sWsum+=lt*op; sPnl+=pn; if(hiS==0||op>hiS)hiS=op; if(loS==0||op<loS)loS=op; }
+   }
+   double bAvg=bLots>0?bWsum/bLots:0, sAvg=sLots>0?sWsum/sLots:0;
+   string bAvgPart = bCnt>0 ? DoubleToString(bAvg, 8) : "null";
+   string sAvgPart = sCnt>0 ? DoubleToString(sAvg, 8) : "null";
+   bool hB=(bCnt>=HedgeOverrideLevels), hS=(sCnt>=HedgeOverrideLevels);
+   return StringFormat(
+      "{\"botName\":\"SuperFiveCentBot\",\"symbol\":\"%s\",\"serverTime\":\"%s\",\"todayPnl\":%.2f,\"dayTarget\":%.2f,\"floatingPnl\":%.2f,\"marketOpen\":%s,\"marketBlockReason\":\"%s\",\"emaPeriod\":%d,\"emaValue\":%s,\"emaDistancePips\":%s,\"emaSlopePips\":%s,\"emaTrend\":\"%s\",\"buyFilter\":\"%s\",\"sellFilter\":\"%s\",\"buyPositions\":%d,\"sellPositions\":%d,\"buyLots\":%.2f,\"sellLots\":%.2f,\"buyAvgEntry\":%s,\"sellAvgEntry\":%s,\"buyPnl\":%.2f,\"sellPnl\":%.2f,\"buySlArmed\":%s,\"sellSlArmed\":%s,\"buyHedgeOverride\":%s,\"sellHedgeOverride\":%s}",
+      QauntraBotJsonEscape(_Symbol), QauntraBotJsonEscape(timeStr), dayPnl, DailyProfitTargetUSD, floatPnl,
+      marketBlocked ? "false" : "true", QauntraBotJsonEscape(blockReason), EMA_Period,
+      emaValPart, distPart, slopePart, QauntraBotJsonEscape(trendStr), QauntraBotJsonEscape(buyFilter), QauntraBotJsonEscape(sellFilter),
+      bCnt, sCnt, bLots, sLots, bAvgPart, sAvgPart, bPnl, sPnl,
+      g_buySLActive ? "true" : "false", g_sellSLActive ? "true" : "false", hB ? "true" : "false", hS ? "true" : "false");
+}
+
 bool QauntraBotPushTradingStats(const string licenseKey)
 {
    string key = licenseKey;
@@ -169,9 +251,10 @@ bool QauntraBotPushTradingStats(const string licenseKey)
    string server   = AccountInfoString(ACCOUNT_SERVER);
    string accountStr = IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN));
 
+   string botStatus = QauntraBotBuildBotStatusJson();
    string json = StringFormat(
-      "{\"licenseKey\":\"%s\",\"account\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"profit\":%.2f,\"currency\":\"%s\",\"server\":\"%s\"}",
-      key, accountStr, balance, equity, profit, currency, server
+      "{\"licenseKey\":\"%s\",\"account\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"profit\":%.2f,\"maxFloatingLoss\":%.2f,\"currency\":\"%s\",\"server\":\"%s\",\"botStatus\":%s}",
+      key, accountStr, balance, equity, profit, g_maxFloatingLossAll, currency, server, botStatus
    );
 
    char post[];

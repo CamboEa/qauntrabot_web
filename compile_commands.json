@@ -1,0 +1,58 @@
+[
+    {
+        "directory": "/Users/bunkheangheng/Desktop/Project/QauntraBot",
+        "arguments": [
+            "clang++",
+            "-xc++",
+            "-std=c++17",
+            "-D__MQL__",
+            "-D__MQL5__",
+            "-include/Users/bunkheangheng/.cursor/extensions/ngsoftware.mql-clangd-1.1.45-universal/files/mql_clangd_compat.h",
+            "-fms-extensions",
+            "-fms-compatibility",
+            "-ferror-limit=0",
+            "-Wno-invalid-token-paste",
+            "-Wno-unused-value",
+            "-Wno-unknown-pragmas",
+            "-Wno-writable-strings",
+            "-Xclang",
+            "-Wno-invalid-pp-directive",
+            "-Wno-unknown-directives",
+            "-Wno-language-extension-token",
+            "-I/Users/bunkheangheng/Desktop/Project/QauntraBot",
+            "-I/Users/bunkheangheng/Desktop/Project/QauntraBot/Include",
+            "-D__MQL5_BUILD__",
+            "-c",
+            "/Users/bunkheangheng/Desktop/Project/QauntraBot/examples/EaSample/SuperFiveCentBot.mq5"
+        ],
+        "file": "/Users/bunkheangheng/Desktop/Project/QauntraBot/examples/EaSample/SuperFiveCentBot.mq5"
+    },
+    {
+        "directory": "/Users/bunkheangheng/Desktop/Project/QauntraBot",
+        "arguments": [
+            "clang++",
+            "-xc++",
+            "-std=c++17",
+            "-D__MQL__",
+            "-D__MQL5__",
+            "-include/Users/bunkheangheng/.cursor/extensions/ngsoftware.mql-clangd-1.1.45-universal/files/mql_clangd_compat.h",
+            "-fms-extensions",
+            "-fms-compatibility",
+            "-ferror-limit=0",
+            "-Wno-invalid-token-paste",
+            "-Wno-unused-value",
+            "-Wno-unknown-pragmas",
+            "-Wno-writable-strings",
+            "-Xclang",
+            "-Wno-invalid-pp-directive",
+            "-Wno-unknown-directives",
+            "-Wno-language-extension-token",
+            "-I/Users/bunkheangheng/Desktop/Project/QauntraBot",
+            "-I/Users/bunkheangheng/Desktop/Project/QauntraBot/Include",
+            "-D__MQL5_BUILD__",
+            "-c",
+            "/Users/bunkheangheng/Desktop/Project/QauntraBot/.next/standalone/examples/EaSample/SuperFiveCentBot.mq5"
+        ],
+        "file": "/Users/bunkheangheng/Desktop/Project/QauntraBot/.next/standalone/examples/EaSample/SuperFiveCentBot.mq5"
+    }
+]

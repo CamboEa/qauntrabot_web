@@ -4,27 +4,26 @@ import Link from "next/link";
 import {
   Monitor,
   ShieldCheck,
-  Key,
-  Mail,
   ArrowRight,
   Copy,
   Check,
   RefreshCw,
   Server,
+  TrendingDown,
+  LineChart,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { BILLING_PERIOD_LABEL } from "@/lib/subscription-plans";
-import { formatDisplayDate, formatRelativeTime } from "@/lib/dates";
+import { formatRelativeTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/format-money";
-import ContentHeading from "@/components/shared/ContentHeading";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
-import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscriptionAlerts";
-import DashboardOverviewStats from "@/components/dashboard/DashboardOverviewStats";
 import DashboardBlock from "@/components/dashboard/DashboardBlock";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import DashboardMetaItem from "@/components/dashboard/DashboardMetaItem";
+import BalanceGrowthChart from "@/components/dashboard/BalanceGrowthChart";
+import BotLiveSituation from "@/components/dashboard/BotLiveSituation";
+import ContentHeading from "@/components/shared/ContentHeading";
 
 export default function DashboardTradingAccount() {
   const { profile } = useAuth();
@@ -32,7 +31,6 @@ export default function DashboardTradingAccount() {
     subscription,
     loading,
     active,
-    email,
     platform,
     mtAccountNumber,
     tradingSnapshot,
@@ -44,6 +42,8 @@ export default function DashboardTradingAccount() {
   const mtAccount = mtAccountNumber;
   const hasProfileOnly = !subscription?.mtAccountNumber && Boolean(profile?.mtAccountNumber);
   const currency = tradingSnapshot?.currency ?? "USD";
+  const history = tradingSnapshot?.balanceHistory ?? [];
+  const maxFloatingLoss = tradingSnapshot?.maxFloatingLoss;
 
   const handleCopyAccount = async () => {
     if (!mtAccount) return;
@@ -67,7 +67,7 @@ export default function DashboardTradingAccount() {
       <DashboardSectionHead
         eyebrow="Trading account"
         title="Your MT account"
-        description="Balance updates automatically while your EA is attached — bot trades, manual trades, or deposits."
+        description="Same live readout as your EA chart dashboard — trend, market hours, grid, and balance."
         aside={
           <button
             type="button"
@@ -80,8 +80,6 @@ export default function DashboardTradingAccount() {
           </button>
         }
       />
-
-      <DashboardSubscriptionAlerts />
 
       {loading ? (
         <div className="dashboard-skeleton" />
@@ -104,31 +102,79 @@ export default function DashboardTradingAccount() {
             }
           >
             {tradingSnapshot ? (
-              <div className="dashboard-hero-stats">
-                <div className="dashboard-hero-stat">
-                  <p className="stat-label normal-case">Balance</p>
-                  <p className="dashboard-hero-value">{formatMoney(tradingSnapshot.balance, currency)}</p>
+              <>
+                <div className="dashboard-hero-stats dashboard-hero-stats--4">
+                  <div className="dashboard-hero-stat">
+                    <p className="stat-label normal-case">Balance</p>
+                    <p className="dashboard-hero-value">
+                      {formatMoney(tradingSnapshot.balance, currency)}
+                    </p>
+                  </div>
+                  <div className="dashboard-hero-stat">
+                    <p className="stat-label normal-case">Equity</p>
+                    <p className="dashboard-hero-value">
+                      {formatMoney(tradingSnapshot.equity, currency)}
+                    </p>
+                  </div>
+                  <div className="dashboard-hero-stat">
+                    <p className="stat-label normal-case">Floating P/L</p>
+                    <p
+                      className={`dashboard-hero-value ${
+                        tradingSnapshot.profit >= 0 ? "text-profit" : "text-loss"
+                      }`}
+                    >
+                      {formatMoney(tradingSnapshot.profit, currency)}
+                    </p>
+                  </div>
+                  <div className="dashboard-hero-stat">
+                    <p className="stat-label normal-case inline-flex items-center gap-1">
+                      <TrendingDown size={12} className="text-loss" />
+                      Max floating loss
+                    </p>
+                    <p
+                      className={`dashboard-hero-value ${
+                        maxFloatingLoss !== undefined && maxFloatingLoss < 0
+                          ? "text-loss"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {maxFloatingLoss !== undefined && maxFloatingLoss < 0
+                        ? formatMoney(maxFloatingLoss, currency)
+                        : "—"}
+                    </p>
+                    <p className="text-[0.65rem] font-data text-muted-foreground">
+                      Worst open P/L this EA session
+                    </p>
+                  </div>
                 </div>
-                <div className="dashboard-hero-stat">
-                  <p className="stat-label normal-case">Equity</p>
-                  <p className="dashboard-hero-value">{formatMoney(tradingSnapshot.equity, currency)}</p>
-                </div>
-                <div className="dashboard-hero-stat">
-                  <p className="stat-label normal-case">Floating P/L</p>
-                  <p
-                    className={`dashboard-hero-value ${
-                      tradingSnapshot.profit >= 0 ? "text-profit" : "text-loss"
-                    }`}
-                  >
-                    {formatMoney(tradingSnapshot.profit, currency)}
-                  </p>
-                </div>
-              </div>
+
+                <BalanceGrowthChart
+                  history={history}
+                  currency={currency}
+                  currentBalance={tradingSnapshot.balance}
+                />
+
+                {tradingSnapshot.botStatus ? (
+                  <BotLiveSituation
+                    status={tradingSnapshot.botStatus}
+                    currency={currency}
+                  />
+                ) : (
+                  <DashboardCard variant="soft">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      <strong className="text-foreground">Bot situation not synced yet.</strong> Recompile
+                      the EA from the latest <span className="font-data">SuperFiveCentBot.mq5</span> sample
+                      and keep it attached — trend, market block, and grid stats will appear here.
+                    </p>
+                  </DashboardCard>
+                )}
+              </>
             ) : (
               <DashboardCard variant="soft">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  <strong className="text-foreground">No live balance yet.</strong> Attach your licensed EA
-                  on this MT account — balance syncs automatically when it changes.
+                  <strong className="text-foreground">No live balance yet.</strong> Attach your
+                  licensed EA on this MT account — balance, growth chart, and max floating loss sync
+                  automatically.
                 </p>
                 {active && (
                   <Link
@@ -147,10 +193,6 @@ export default function DashboardTradingAccount() {
             )}
           </DashboardBlock>
 
-          <DashboardBlock title="Subscription & access">
-            <DashboardOverviewStats showTradingAccountLink={false} compact />
-          </DashboardBlock>
-
           {mtAccount ? (
             <DashboardCard variant="accent">
               <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -163,7 +205,7 @@ export default function DashboardTradingAccount() {
                       Registered at sign-up
                     </span>
                   )}
-                  {active && subscription && (
+                  {active && (
                     <span className="inline-flex items-center gap-1 text-xs font-data text-profit px-2 py-1 rounded-full bg-profit/10 border border-profit/20">
                       <ShieldCheck size={12} />
                       Licensed
@@ -189,67 +231,24 @@ export default function DashboardTradingAccount() {
 
               <div className="dashboard-meta-grid">
                 <DashboardMetaItem label="Platform" value={platform} />
-                {subscription ? (
-                  <>
-                    <DashboardMetaItem
-                      label="Plan"
-                      value={BILLING_PERIOD_LABEL[subscription.billingPeriod]}
-                    />
-                    <DashboardMetaItem
-                      label="Valid until"
-                      value={formatDisplayDate(subscription.validUntil)}
-                      mono
-                    />
-                    <DashboardMetaItem
-                      label="Subscription"
-                      value={active ? "Active" : subscription.status}
-                      valueClassName={active ? "text-profit" : ""}
-                    />
-                  </>
-                ) : (
-                  <DashboardMetaItem label="Subscription" value="Not active yet" />
-                )}
+                <DashboardMetaItem
+                  label="Chart samples"
+                  value={
+                    history.length > 0
+                      ? `${history.length} balance point${history.length === 1 ? "" : "s"}`
+                      : "Building…"
+                  }
+                />
               </div>
             </DashboardCard>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No trading account on file. Add your MT login when registering, or contact support.
-            </p>
-          )}
-
-          <div className="dashboard-grid-2">
-            <DashboardCard>
-              <ContentHeading icon={Mail} as="h3">
-                Login email
-              </ContentHeading>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Portal sign-in (separate from your MT account number).
-              </p>
-              <p className="font-medium break-all text-sm">{email}</p>
-              {profile?.createdAt && (
-                <p className="text-xs font-data text-muted-foreground">
-                  Member since {formatDisplayDate(profile.createdAt)}
-                </p>
-              )}
-            </DashboardCard>
-
             <DashboardCard variant="soft">
-              <p className="text-sm text-foreground/90 leading-relaxed">
-                <strong>One account per license.</strong> EAs verify account{" "}
-                <span className="font-data">{mtAccount || "—"}</span> and sync balance to this page.
+              <p className="text-sm text-muted-foreground flex items-start gap-2">
+                <LineChart size={16} className="text-primary shrink-0 mt-0.5" />
+                No trading account on file. Add your MT login when registering, or contact support.
               </p>
-              {active && (
-                <Link
-                  href="/dashboard/license"
-                  className="text-sm text-primary font-medium inline-flex items-center gap-1 hover:underline w-fit"
-                >
-                  <Key size={14} />
-                  View license key
-                  <ArrowRight size={14} />
-                </Link>
-              )}
             </DashboardCard>
-          </div>
+          )}
         </>
       )}
     </div>
