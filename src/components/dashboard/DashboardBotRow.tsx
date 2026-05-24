@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Download, Lock } from "lucide-react";
 import type { BotDoc } from "@/lib/firestore";
+import { fetchSignedDownloadUrl } from "@/lib/download-client";
 import { BOT_RISK_COLOR, BOT_STATUS_CONFIG } from "@/lib/bot-display";
 
 type DashboardBotRowProps = {
@@ -26,14 +27,11 @@ export default function DashboardBotRow({ bot, canDownload, userPlatform }: Dash
     if (!bot.fileKey || !canDownload) return;
     setDownloading(true);
     try {
-      const res = await fetch(`/api/download?key=${encodeURIComponent(bot.fileKey)}`);
-      const { url } = await res.json();
-      if (url) {
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = bot.fileKey.split("/").pop() ?? "ea-file";
-        a.click();
-      }
+      const url = await fetchSignedDownloadUrl(bot.fileKey);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = bot.fileKey.split("/").pop() ?? "ea-file";
+      a.click();
     } catch {
       alert("Download failed. Please contact support.");
     } finally {

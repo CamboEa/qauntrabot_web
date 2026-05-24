@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDownloadUrl } from "@/lib/r2";
+import { isAllowedBotFileKey, requireActiveSubscriber } from "@/lib/download-auth";
 
-// GET /api/download?key=bots/files/xauusd-grid-mt5.ex5
-// Returns a signed R2 URL valid for 1 hour.
-// In production, verify the user has an active subscription before issuing the URL.
+const EXPIRES_SEC = 3600;
+
+/** Signed R2 URL for EA files — requires active subscription. */
 export async function GET(req: NextRequest) {
   try {
     const key = req.nextUrl.searchParams.get("key");
@@ -11,14 +12,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing key" }, { status: 400 });
     }
 
-    // TODO: Verify auth token and subscription before issuing signed URL
-    // const token = req.headers.get("Authorization")?.replace("Bearer ", "");
-    // const uid = await verifyFirebaseToken(token);
-    // const hasAccess = await hasAccessToBot(uid, botIdFromKey(key));
-    // if (!hasAccess) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!isAllowedBotFileKey(key)) {
+      return NextResponse.json({ error: "Invalid file key" }, { status: 400 });
+    }
 
-    const url = await getDownloadUrl(key, 3600);
-    return NextResponse.json({ url, expiresIn: 3600 });
+    const session = await requireActiveSubscriber(req);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const url = await getDownloadUrl(key, EXPIRES_SEC);
+    return NextResponse.json({ url, expiresIn: EXPIRES_SEC });
   } catch (err) {
     console.error("[download]", err);
     return NextResponse.json({ error: "Failed to generate download URL" }, { status: 500 });

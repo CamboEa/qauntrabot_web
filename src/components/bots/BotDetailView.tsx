@@ -20,6 +20,7 @@ import {
   BOT_STATUS_CONFIG,
   type SerializableBot,
 } from "@/lib/bot-display";
+import { fetchSignedDownloadUrl } from "@/lib/download-client";
 import PageSection from "@/components/shared/PageSection";
 import ContentHeading from "@/components/shared/ContentHeading";
 import R2Image from "@/components/shared/R2Image";
@@ -97,9 +98,12 @@ function ProofBlock({
           className="btn-outline-brand text-xs inline-flex items-center gap-1.5 w-fit"
           onClick={async (e) => {
             e.preventDefault();
-            const res = await fetch(`/api/download?key=${encodeURIComponent(proof.reportKey!)}`);
-            const { url } = await res.json();
-            if (url) window.open(url, "_blank");
+            try {
+              const url = await fetchSignedDownloadUrl(proof.reportKey!);
+              window.open(url, "_blank");
+            } catch {
+              alert("Could not open report. Sign in with an active subscription.");
+            }
           }}
         >
           <FileText size={14} />
@@ -135,16 +139,13 @@ export default function BotDetailView({ bot }: Props) {
     if (!bot.fileKey) return;
     setDownloading(true);
     try {
-      const res = await fetch(`/api/download?key=${encodeURIComponent(bot.fileKey)}`);
-      const { url } = await res.json();
-      if (url) {
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = bot.fileKey.split("/").pop() ?? "bot.ex5";
-        a.click();
-      }
-    } catch {
-      alert("Download failed. Please contact support.");
+      const url = await fetchSignedDownloadUrl(bot.fileKey);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = bot.fileKey.split("/").pop() ?? "bot.ex5";
+      a.click();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Download failed. Please contact support.");
     } finally {
       setDownloading(false);
     }

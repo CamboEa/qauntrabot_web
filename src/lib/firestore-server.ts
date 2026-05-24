@@ -5,6 +5,12 @@
 import { FieldValue, type DocumentData } from "firebase-admin/firestore";
 import { getAdminFirestore } from "./firebase-admin";
 import {
+  getUidByLicenseKey,
+  normalizeLicenseKeyDocId,
+  removeLicenseIndex,
+  setLicenseIndex,
+} from "./license-index";
+import {
   normalizeBillingPeriod,
   isSubscriptionActive,
   computeValidUntil,
@@ -175,15 +181,29 @@ export async function updateTradingSnapshot(
   uid: string,
   snapshot: Omit<TradingSnapshot, "updatedAt">,
 ): Promise<void> {
-  await db()
-    .collection("users")
-    .doc(uid)
-    .update({
-      tradingSnapshot: {
-        ...snapshot,
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-    });
+  const ref = db().collection("users").doc(uid);
+  const existing = await ref.get();
+  const prev = existing.exists
+    ? parseTradingSnapshot(existing.data()?.tradingSnapshot)
+    : null;
+
+  if (
+    prev &&
+    Math.abs(prev.balance - snapshot.balance) < 0.01 &&
+    Math.abs(prev.equity - snapshot.equity) < 0.01 &&
+    Math.abs(prev.profit - snapshot.profit) < 0.01 &&
+    prev.currency === snapshot.currency &&
+    (prev.server ?? "") === (snapshot.server ?? "")
+  ) {
+    return;
+  }
+
+  await ref.update({
+    tradingSnapshot: {
+      ...snapshot,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+  });
 }
 
 export async function createUserProfile(
@@ -248,8 +268,13 @@ export async function getUserSubscription(uid: string): Promise<Subscription | n
 export async function getSubscriptionByLicenseKey(
   licenseKey: string,
 ): Promise<Subscription | null> {
-  const key = licenseKey.trim().toUpperCase();
+  const key = normalizeLicenseKeyDocId(licenseKey);
   if (!key) return null;
+
+  const uid = await getUidByLicenseKey(key);
+  if (uid) {
+    return getUserSubscription(uid);
+  }
 
   const snap = await db()
     .collection("subscriptions")
@@ -258,19 +283,25 @@ export async function getSubscriptionByLicenseKey(
     .get();
 
   if (snap.empty) return null;
-  const doc = snap.docs[0];
-  return parseSubscriptionDoc(doc.id, doc.data());
+
+  const docSnap = snap.docs[0];
+  await setLicenseIndex(docSnap.id, key);
+  return parseSubscriptionDoc(docSnap.id, docSnap.data());
 }
 
 export async function upsertSubscription(uid: string, data: SubscriptionInput): Promise<void> {
   const ref = db().collection("subscriptions").doc(uid);
   const existing = await ref.get();
+  const previousKey = existing.exists
+    ? normalizeLicenseKeyDocId((existing.data()?.licenseKey as string) ?? "")
+    : "";
+
   const validUntil =
     data.validUntil !== undefined
       ? data.validUntil
       : computeValidUntil(data.billingPeriod);
 
-  const licenseKey = (data.licenseKey ?? generateLicenseKey()).trim().toUpperCase();
+  const licenseKey = normalizeLicenseKeyDocId(data.licenseKey ?? generateLicenseKey());
 
   const payload: DocumentData = {
     billingPeriod: data.billingPeriod,
@@ -289,10 +320,21 @@ export async function upsertSubscription(uid: string, data: SubscriptionInput): 
       createdAt: FieldValue.serverTimestamp(),
     });
   }
+
+  if (previousKey && previousKey !== licenseKey) {
+    await removeLicenseIndex(previousKey);
+  }
+  await setLicenseIndex(uid, licenseKey);
 }
 
 export async function deleteSubscription(uid: string): Promise<void> {
-  await db().collection("subscriptions").doc(uid).delete();
+  const ref = db().collection("subscriptions").doc(uid);
+  const existing = await ref.get();
+  if (existing.exists) {
+    const key = normalizeLicenseKeyDocId((existing.data()?.licenseKey as string) ?? "");
+    if (key) await removeLicenseIndex(key);
+  }
+  await ref.delete();
 }
 
 function generateLicenseKey(): string {

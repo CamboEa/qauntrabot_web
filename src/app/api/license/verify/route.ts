@@ -8,6 +8,7 @@ import {
   verifyLicenseForAccount,
 } from "@/lib/license-verify";
 import { normalizeMtAccountNumber } from "@/lib/mt-account";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 type VerifyBody = {
   licenseKey?: string;
@@ -71,9 +72,23 @@ async function verify(licenseKey: string, account: string) {
   });
 }
 
+function rateLimited(req: NextRequest): NextResponse | null {
+  const ip = getClientIp(req);
+  const limit = checkRateLimit(`license-verify:${ip}`, 60, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+    );
+  }
+  return null;
+}
+
 /** License check for Expert Advisors — locked to registered MT account + active subscription. */
 export async function GET(req: NextRequest) {
   try {
+    const blocked = rateLimited(req);
+    if (blocked) return blocked;
     const { licenseKey, account } = readParams(req);
     return await verify(licenseKey, account);
   } catch (err) {
@@ -84,6 +99,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const blocked = rateLimited(req);
+    if (blocked) return blocked;
     let licenseKey = "";
     let account = "";
 

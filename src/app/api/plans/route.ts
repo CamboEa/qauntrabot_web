@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
-import { getAllPlans } from "@/lib/firestore-api";
-import { getDefaultPlans } from "@/lib/subscription-plans";
+import { getCachedPlans } from "@/lib/cached-plans";
 
 export async function GET() {
   try {
-    const plans = await getAllPlans();
-    if (plans.length > 0) {
-      return NextResponse.json(plans);
-    }
-    return NextResponse.json(getDefaultPlans());
+    const plans = await getCachedPlans();
+    return NextResponse.json(plans, {
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    });
   } catch (err) {
     console.error("[plans GET]", err);
-    return NextResponse.json(getDefaultPlans());
+    return NextResponse.json({ error: "Failed to load plans" }, { status: 500 });
   }
 }

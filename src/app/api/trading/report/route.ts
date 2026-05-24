@@ -6,6 +6,7 @@ import {
 } from "@/lib/firestore-api";
 import { normalizeLicenseKey, verifyLicenseForAccount } from "@/lib/license-verify";
 import { normalizeMtAccountNumber } from "@/lib/mt-account";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 type ReportBody = {
   licenseKey?: string;
@@ -20,6 +21,15 @@ type ReportBody = {
 /** MT5 EA reports live balance/equity (same auth as license verify). */
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const limit = checkRateLimit(`trading-report:${ip}`, 120, 60_000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+      );
+    }
+
     const body = (await req.json()) as ReportBody;
     const key = normalizeLicenseKey(body.licenseKey ?? "");
     const account = normalizeMtAccountNumber(body.account ?? "");

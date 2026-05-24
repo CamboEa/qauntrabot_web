@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
 import BotCatalogCard, { BotCatalogCardSkeleton } from "@/components/bots/BotCatalogCard";
+import { fetchSignedDownloadUrl } from "@/lib/download-client";
 
 type Filter = "all" | "live" | "beta" | "soon";
 
@@ -43,14 +44,13 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
     if (!bot.fileKey) return;
     setDownloadingId(bot.id);
     try {
-      const res = await fetch(`/api/download?key=${encodeURIComponent(bot.fileKey)}`);
-      const { url } = await res.json();
+      const url = await fetchSignedDownloadUrl(bot.fileKey);
       const a = document.createElement("a");
       a.href = url;
       a.download = bot.fileKey.split("/").pop() ?? "bot.ex5";
       a.click();
-    } catch {
-      alert("Download failed. Please contact support.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Download failed. Please contact support.");
     } finally {
       setDownloadingId(null);
     }

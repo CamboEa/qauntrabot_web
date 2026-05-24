@@ -17,7 +17,7 @@ import {
   type Subscription,
   type TradingSnapshot,
 } from "@/lib/firestore";
-import { fetchTradingSnapshot } from "@/lib/trading-snapshot-client";
+import { subscribeTradingSnapshot } from "@/lib/trading-snapshot-listener";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
 import { resolveMtAccountNumber } from "@/lib/mt-account";
 
@@ -54,14 +54,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
-      const [sub, allBots, snapshot] = await Promise.all([
+      const [sub, allBots] = await Promise.all([
         getUserSubscription(user.uid),
         getAllBots(),
-        fetchTradingSnapshot(user.uid),
       ]);
       setSubscription(sub);
       setBots(allBots);
-      setTradingSnapshot(snapshot);
     } catch {
       setSubscription(null);
       setBots([]);
@@ -76,20 +74,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [load]);
 
   useEffect(() => {
-    if (!user) return;
-
-    const poll = () => {
-      fetchTradingSnapshot(user.uid).then(setTradingSnapshot);
-    };
-
-    const intervalId = window.setInterval(poll, 15_000);
-    const onFocus = () => poll();
-    window.addEventListener("focus", onFocus);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener("focus", onFocus);
-    };
+    if (!user) {
+      setTradingSnapshot(null);
+      return;
+    }
+    return subscribeTradingSnapshot(user.uid, setTradingSnapshot);
   }, [user]);
 
   const active = subscription
