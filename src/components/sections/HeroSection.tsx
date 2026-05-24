@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Shield, Zap, CheckCircle2 } from "lucide-react";
+import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
 const TRUST_ITEMS = [
   { icon: TrendingUp, label: "MT4 / MT5 Compatible" },
@@ -56,9 +57,15 @@ export default function HeroSection() {
               <Link href="/pricing" className="group btn-primary-brand justify-center sm:w-auto transition-transform duration-200 hover:-translate-y-0.5">
                 View Pricing <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
-              <Link href="/performance" className="btn-outline-brand justify-center sm:w-auto transition-transform duration-200 hover:-translate-y-0.5">
-                Live Results
-              </Link>
+              {SHOW_LIVE_RESULTS_PAGE ? (
+                <Link href="/performance" className="btn-outline-brand justify-center sm:w-auto transition-transform duration-200 hover:-translate-y-0.5">
+                  Live Results
+                </Link>
+              ) : (
+                <Link href="/bots" className="btn-outline-brand justify-center sm:w-auto transition-transform duration-200 hover:-translate-y-0.5">
+                  Browse Bots
+                </Link>
+              )}
             </div>
 
             <div className="stats-grid pt-6 border-t border-border">

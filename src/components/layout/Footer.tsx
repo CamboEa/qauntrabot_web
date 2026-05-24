@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
 const LINKS = {
   Product: [
     { label: "Features", href: "/features" },
-    { label: "Live Results", href: "/performance" },
+    ...(SHOW_LIVE_RESULTS_PAGE ? [{ label: "Live Results", href: "/performance" }] : []),
     { label: "Pricing", href: "/pricing" },
     { label: "Bots", href: "/bots" },
   ],

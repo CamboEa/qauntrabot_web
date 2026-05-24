@@ -38,8 +38,8 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button type="button" onClick={() => router.push("/profile")} className="btn-primary-brand cursor-pointer">
-                My profile <ArrowRight size={16} />
+              <button type="button" onClick={() => router.push("/dashboard")} className="btn-primary-brand cursor-pointer">
+                Dashboard <ArrowRight size={16} />
               </button>
               <button type="button" onClick={() => router.push("/bots")} className="btn-outline-brand cursor-pointer">
                 Browse bots
@@ -60,7 +60,7 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
       setSubmitted(true);
       setTimeout(() => {
         const next = new URLSearchParams(window.location.search).get("next");
-        router.push(next?.startsWith("/") ? next : "/profile");
+        router.push(next?.startsWith("/") ? next : "/dashboard");
       }, 1500);
     } catch (err: unknown) {
       setError(friendlyError(err instanceof Error ? err.message : "Something went wrong"));

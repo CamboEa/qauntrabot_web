@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import PageWrapper from "@/components/layout/PageWrapper";
 import PerformanceSection from "@/components/sections/PerformanceSection";
+import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Live Results — QauntraBot",
@@ -8,6 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default function PerformancePage() {
+  if (!SHOW_LIVE_RESULTS_PAGE) {
+    redirect("/");
+  }
+
   return (
     <PageWrapper
       hero={{

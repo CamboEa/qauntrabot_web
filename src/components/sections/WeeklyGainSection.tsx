@@ -1,10 +1,9 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, Calendar, CheckCircle2, TrendingUp, Wallet } from "lucide-react";
+import { Calendar, CheckCircle2, TrendingUp, Wallet } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
 import ScrollReveal from "@/components/shared/ScrollReveal";
+import ProofPhonePair from "@/components/shared/ProofPhonePair";
 
 const PROOF_STATS: {
   label: string;
@@ -22,6 +21,19 @@ const PROOF_POINTS = [
   "XAUUSD micro-lot execution on a funded account",
   "Net result within ~10% of starting capital in 7 days",
 ];
+
+const LIVE_PHONES = [
+  {
+    src: "/asset/tradingScreen.png",
+    alt: "MT5 mobile deal history showing XAUUSD trades and approximately 10% account growth in one week",
+    label: "Deal history",
+  },
+  {
+    src: "/asset/tradingScreen2.png",
+    alt: "MT5 mobile chart for XAUUSD on M15 timeframe with live bot trade markers",
+    label: "Live chart",
+  },
+] as const;
 
 export default function WeeklyGainSection() {
   return (
@@ -70,26 +82,18 @@ export default function WeeklyGainSection() {
         </ScrollReveal>
 
         <ScrollReveal variant="right" delay={100} className="order-1 lg:order-2 flex justify-center lg:justify-end">
-          <div className="weekly-gain-device">
-            <div className="weekly-gain-badge" aria-hidden>
-              <span className="weekly-gain-badge-value">+10%</span>
-              <span className="weekly-gain-badge-label">
-                <Calendar size={12} className="inline shrink-0" />
-                7-day target
-              </span>
-            </div>
-            <div className="weekly-gain-screen">
-              <Image
-                src="/asset/tradingScreen.png"
-                alt="MT5 mobile history showing XAUUSD deals and approximately 10% account growth in one week"
-                width={390}
-                height={844}
-                className="w-full h-auto"
-                priority={false}
-                sizes="(max-width: 1024px) min(100vw - 2.5rem, 240px), 272px"
-              />
-            </div>
-          </div>
+          <ProofPhonePair
+            phones={[...LIVE_PHONES]}
+            badge={
+              <div className="weekly-gain-badge" aria-hidden>
+                <span className="weekly-gain-badge-value">+10%</span>
+                <span className="weekly-gain-badge-label">
+                  <Calendar size={12} className="inline shrink-0" />
+                  7-day target
+                </span>
+              </div>
+            }
+          />
         </ScrollReveal>
       </div>
     </PageSection>

@@ -24,3 +24,10 @@ export function formatDisplayDate(value: unknown, fallback = "No expiry"): strin
   if (!d) return fallback;
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
+
+/** Whole days from now until `value` (negative if past). */
+export function daysUntil(value: unknown): number | null {
+  const d = toDate(value);
+  if (!d) return null;
+  return Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}

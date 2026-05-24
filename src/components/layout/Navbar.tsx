@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import UserNavMenu from "./UserNavMenu";
+import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
 const NAV_LINKS = [
   { label: "Bots", href: "/bots" },
   { label: "Features", href: "/features" },
-  { label: "Live Results", href: "/performance" },
+  ...(SHOW_LIVE_RESULTS_PAGE ? [{ label: "Live Results", href: "/performance" }] : []),
   { label: "Pricing", href: "/pricing" },
   { label: "FAQs", href: "/faqs" },
 ];

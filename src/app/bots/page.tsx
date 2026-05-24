@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import PageWrapper from "@/components/layout/PageWrapper";
 import BotsSection from "@/components/sections/BotsSection";
+import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Trading Bots — QauntraBot",
@@ -16,7 +17,9 @@ export default function BotsPage() {
         accent: "bots.",
         description: "Expert Advisor modules for gold, forex, and more — deployable on MT4 or MT5 with isolated risk parameters.",
         cta: { label: "View pricing", href: "/pricing" },
-        secondaryCta: { label: "Live results", href: "/performance" },
+        ...(SHOW_LIVE_RESULTS_PAGE
+          ? { secondaryCta: { label: "Live results", href: "/performance" } }
+          : {}),
       }}
     >
       <BotsSection hideHeader />

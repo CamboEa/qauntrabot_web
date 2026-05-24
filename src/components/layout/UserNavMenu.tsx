@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, LogOut, LayoutDashboard, Bot, ChevronDown } from "lucide-react";
+import { LogOut, LayoutDashboard, Bot, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "@/lib/auth";
 
@@ -95,11 +95,11 @@ export default function UserNavMenu({ mobile = false }: { mobile?: boolean }) {
     return (
       <div className="flex flex-col gap-1">
         <Link
-          href="/profile"
+          href="/dashboard"
           className="rounded-xl px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary cursor-pointer flex items-center gap-2"
         >
-          <User size={18} />
-          Profile
+          <LayoutDashboard size={18} />
+          Dashboard
         </Link>
         <Link
           href="/bots"
@@ -157,13 +157,13 @@ export default function UserNavMenu({ mobile = false }: { mobile?: boolean }) {
             <p className="text-xs font-data text-muted-foreground truncate max-w-[11rem]">{email}</p>
           </div>
           <Link
-            href="/profile"
+            href="/dashboard"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-secondary cursor-pointer"
           >
-            <User size={16} />
-            Profile
+            <LayoutDashboard size={16} />
+            Dashboard
           </Link>
           <Link
             href="/bots"

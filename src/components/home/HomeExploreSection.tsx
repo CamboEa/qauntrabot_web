@@ -7,6 +7,7 @@ import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
 import IconTile from "@/components/shared/IconTile";
 import ScrollReveal from "@/components/shared/ScrollReveal";
+import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
 type SiteSection = {
   href: string;
@@ -27,15 +28,19 @@ const SITE_SECTIONS: SiteSection[] = [
     description: "Browse live and upcoming Expert Advisors with verified performance data.",
     stat: "Catalogue",
   },
-  {
-    href: "/performance",
-    icon: TrendingUp,
-    label: "Live Results",
-    tag: "Verified Data",
-    description: "Real account performance — independently verifiable on MyFxBook.",
-    stat: "+312.6%",
-    statColor: "text-profit",
-  },
+  ...(SHOW_LIVE_RESULTS_PAGE
+    ? [
+        {
+          href: "/performance",
+          icon: TrendingUp,
+          label: "Live Results",
+          tag: "Verified Data",
+          description: "Real account performance — independently verifiable on MyFxBook.",
+          stat: "+312.6%",
+          statColor: "text-profit",
+        } satisfies SiteSection,
+      ]
+    : []),
   {
     href: "/features",
     icon: Zap,
