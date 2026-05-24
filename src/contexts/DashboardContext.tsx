@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllBots, getUserSubscription, type BotDoc, type Subscription } from "@/lib/firestore";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
+import { resolveMtAccountNumber } from "@/lib/mt-account";
 
 type DashboardContextValue = {
   subscription: Subscription | null;
@@ -20,6 +21,7 @@ type DashboardContextValue = {
   active: boolean;
   email: string;
   platform: string;
+  mtAccountNumber: string;
   accessibleBots: BotDoc[];
   lockedBots: BotDoc[];
   refresh: () => void;
@@ -66,6 +68,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const email = user?.email ?? profile?.email ?? "";
   const platform = profile?.platform ?? "—";
+  const mtAccountNumber = resolveMtAccountNumber(
+    subscription?.mtAccountNumber,
+    profile?.mtAccountNumber,
+  );
 
   const { accessibleBots, lockedBots } = useMemo(() => {
     const sorted = [...bots].sort((a, b) => {
@@ -89,11 +95,23 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       active,
       email,
       platform,
+      mtAccountNumber,
       accessibleBots,
       lockedBots,
       refresh: load,
     }),
-    [subscription, bots, loading, active, email, platform, accessibleBots, lockedBots, load],
+    [
+      subscription,
+      bots,
+      loading,
+      active,
+      email,
+      platform,
+      mtAccountNumber,
+      accessibleBots,
+      lockedBots,
+      load,
+    ],
   );
 
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;

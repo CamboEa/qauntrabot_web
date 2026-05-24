@@ -172,13 +172,21 @@ export default function AdminSubscriptionsPage() {
               <label className="text-xs font-data uppercase text-muted-foreground">User</label>
               <select
                 value={uid}
-                onChange={(e) => setUid(e.target.value)}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setUid(id);
+                  const selected = users.find((u) => u.uid === id);
+                  if (selected?.mtAccountNumber) {
+                    setMtAccount(selected.mtAccountNumber);
+                  }
+                }}
                 className="w-full rounded-xl border border-border px-3 py-2 text-sm"
               >
                 <option value="">Select user…</option>
                 {users.map((u) => (
                   <option key={u.uid} value={u.uid}>
                     {u.email}
+                    {u.mtAccountNumber ? ` · MT ${u.mtAccountNumber}` : ""}
                   </option>
                 ))}
               </select>

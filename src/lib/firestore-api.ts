@@ -31,6 +31,21 @@ export const deleteBot = (id: string) =>
   withFallback(() => server.deleteBot(id), () => client.deleteBot(id));
 
 export const getAllUsers = () => withFallback(server.getAllUsers, client.getAllUsers);
+export const getUserProfile = (uid: string) =>
+  withFallback(() => server.getUserProfile(uid), () => client.getUserProfile(uid));
+export const updateUserProfile = (
+  uid: string,
+  data: Parameters<typeof server.updateUserProfile>[1]
+) => withFallback(() => server.updateUserProfile(uid, data), () => client.updateUserProfile(uid, data));
+
+export const getUserSubscription = (uid: string) =>
+  withFallback(() => server.getUserSubscription(uid), () => client.getUserSubscription(uid));
+
+export const getSubscriptionByLicenseKey = (licenseKey: string) =>
+  withFallback(
+    () => server.getSubscriptionByLicenseKey(licenseKey),
+    () => client.getSubscriptionByLicenseKey(licenseKey),
+  );
 
 export const getAllSubscriptions = () =>
   withFallback(server.getAllSubscriptions, client.getAllSubscriptions);

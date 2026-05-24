@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 import { signUp, signIn, resetPassword } from "@/lib/auth";
+import { isValidMtAccountNumber, normalizeMtAccountNumber } from "@/lib/mt-account";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
 
 const PLATFORMS = ["MetaTrader 5 (MT5)", "MetaTrader 4 (MT4)"];
 
-type FormData = { email: string; password: string; platform: string };
+type FormData = { email: string; password: string; platform: string; mtAccountNumber: string };
 type Mode = "register" | "login";
 
 export default function RegistrationSection({ hideHeader = false }: { hideHeader?: boolean }) {
@@ -18,7 +19,12 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("register");
   const [showPass, setShowPass] = useState(false);
-  const [form, setForm] = useState<FormData>({ email: "", password: "", platform: PLATFORMS[0] });
+  const [form, setForm] = useState<FormData>({
+    email: "",
+    password: "",
+    platform: PLATFORMS[0],
+    mtAccountNumber: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
@@ -55,8 +61,17 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
     setError(null);
     setLoading(true);
     try {
-      if (mode === "register") await signUp(form.email, form.password, form.platform);
-      else await signIn(form.email, form.password);
+      if (mode === "register") {
+        const mtAccountNumber = normalizeMtAccountNumber(form.mtAccountNumber);
+        if (!isValidMtAccountNumber(mtAccountNumber)) {
+          setError("Enter a valid trading account number (4–15 digits).");
+          setLoading(false);
+          return;
+        }
+        await signUp(form.email, form.password, form.platform, mtAccountNumber);
+      } else {
+        await signIn(form.email, form.password);
+      }
       setSubmitted(true);
       setTimeout(() => {
         const next = new URLSearchParams(window.location.search).get("next");
@@ -171,14 +186,47 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
                 </div>
 
                 {mode === "register" && (
-                  <div className="stack-2">
-                    <label className="field-label">Platform</label>
-                    <select value={form.platform} onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))} className="input-field cursor-pointer" disabled={loading}>
-                      {PLATFORMS.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <>
+                    <div className="stack-2">
+                      <label className="field-label">Platform</label>
+                      <select
+                        value={form.platform}
+                        onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+                        className="input-field cursor-pointer"
+                        disabled={loading}
+                      >
+                        {PLATFORMS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="stack-2">
+                      <label className="field-label">
+                        {form.platform.includes("MT5") ? "MT5 account number" : "MT4 account number"}
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        required
+                        placeholder="e.g. 12345678"
+                        value={form.mtAccountNumber}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            mtAccountNumber: e.target.value.replace(/\D/g, ""),
+                          }))
+                        }
+                        className="input-field font-data"
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Your MetaTrader login ID — used to license EAs on this account only.
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {mode === "login" && (

@@ -9,7 +9,7 @@ import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscriptionAlerts";
 
 export default function DashboardOverview() {
-  const { subscription, loading, active, email, platform } = useDashboard();
+  const { subscription, loading, active, email, platform, mtAccountNumber } = useDashboard();
   const expiryDaysVal = daysUntil(subscription?.validUntil);
 
   return (
@@ -67,9 +67,9 @@ export default function DashboardOverview() {
             <Monitor size={16} className="text-primary shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="dashboard-stat-label">Trading account</p>
-              <p className="dashboard-stat-value font-data text-sm break-all">
-                {subscription?.mtAccountNumber || "Not linked"}
-              </p>
+                  <p className="dashboard-stat-value font-data text-sm break-all">
+                    {mtAccountNumber || "Not linked"}
+                  </p>
               <p className="text-[0.65rem] font-data text-primary mt-1 inline-flex items-center gap-1">
                 View details <ArrowRight size={12} />
               </p>

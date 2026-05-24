@@ -7,12 +7,12 @@ import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 
 const SETUP_STEPS = [
   "Install the EA file on your MT4 or MT5 terminal (File → Open Data Folder → MQL5/Experts).",
-  "Attach the EA to a chart for the bot’s symbol and paste your license key in inputs.",
-  "Use the MT account number registered on your subscription — one account per license.",
+  "In MT5: Tools → Options → Expert Advisors → allow WebRequest for your QauntraBot site URL.",
+  "Attach the EA, paste your license key in inputs, and run only on your registered MT account — the EA verifies online on startup.",
 ];
 
 export default function DashboardSetup() {
-  const { loading, active, subscription, platform } = useDashboard();
+  const { loading, active, mtAccountNumber, platform } = useDashboard();
 
   if (!loading && !active) {
     return (
@@ -37,16 +37,20 @@ export default function DashboardSetup() {
         description="Deploy your first Expert Advisor in three steps."
       />
 
-      {subscription && (
+      {mtAccountNumber && (
         <div className="card-surface card-pad stack-3 text-sm">
           <p className="text-muted-foreground">
             Use account{" "}
-            <span className="font-data font-medium text-foreground">{subscription.mtAccountNumber}</span> on{" "}
+            <span className="font-data font-medium text-foreground">{mtAccountNumber}</span> on{" "}
             <span className="font-medium text-foreground">{platform}</span>.{" "}
-            <Link href="/dashboard/license" className="text-primary hover:underline">
-              Copy your license key
-            </Link>
-            .
+            {active && (
+              <>
+                <Link href="/dashboard/license" className="text-primary hover:underline">
+                  Copy your license key
+                </Link>
+                .
+              </>
+            )}
           </p>
         </div>
       )}

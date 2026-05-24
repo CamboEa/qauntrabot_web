@@ -9,9 +9,14 @@ import {
 import { auth } from "./firebase";
 import { createUserProfile } from "./firestore";
 
-export async function signUp(email: string, password: string, platform: string): Promise<User> {
+export async function signUp(
+  email: string,
+  password: string,
+  platform: string,
+  mtAccountNumber: string,
+): Promise<User> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
-  await createUserProfile(credential.user.uid, { email, platform });
+  await createUserProfile(credential.user.uid, { email, platform, mtAccountNumber });
   return credential.user;
 }
 

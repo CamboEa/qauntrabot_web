@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { getAllSubscriptions, upsertSubscription, type SubscriptionInput } from "@/lib/firestore-api";
+import {
+  getAllSubscriptions,
+  getUserProfile,
+  upsertSubscription,
+  type SubscriptionInput,
+} from "@/lib/firestore-api";
+import { normalizeMtAccountNumber } from "@/lib/mt-account";
 
 export async function GET(req: Request) {
   const admin = await requireAdmin(req);
@@ -33,8 +39,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User id is required" }, { status: 400 });
     }
 
+    let mtAccountNumber = normalizeMtAccountNumber(data.mtAccountNumber ?? "");
+    if (!mtAccountNumber) {
+      const profile = await getUserProfile(uid);
+      mtAccountNumber = normalizeMtAccountNumber(profile?.mtAccountNumber ?? "");
+    }
+
     await upsertSubscription(uid, {
       ...data,
+      mtAccountNumber,
       validUntil: data.validUntil ? new Date(data.validUntil) : null,
     });
 

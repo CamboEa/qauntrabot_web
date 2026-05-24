@@ -107,6 +107,8 @@ export type UserProfile = {
   uid: string;
   email: string;
   platform: string;
+  /** MT4/MT5 trading account login (registered at sign-up) */
+  mtAccountNumber?: string;
   displayName?: string;
   createdAt: Date;
 };
@@ -154,7 +156,7 @@ function parseSubscriptionDoc(uid: string, data: DocumentData): Subscription {
 
 export async function createUserProfile(
   uid: string,
-  data: { email: string; platform: string; displayName?: string }
+  data: { email: string; platform: string; mtAccountNumber: string; displayName?: string }
 ): Promise<void> {
   await setDoc(doc(db, "users", uid), {
     ...data,
@@ -166,7 +168,15 @@ export async function createUserProfile(
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as unknown as UserProfile;
+  const data = snap.data();
+  return {
+    uid: snap.id,
+    email: data.email as string,
+    platform: (data.platform as string) ?? "",
+    mtAccountNumber: (data.mtAccountNumber as string) ?? "",
+    displayName: data.displayName as string | undefined,
+    createdAt: data.createdAt?.toDate?.() ?? new Date(),
+  };
 }
 
 export async function updateUserProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
@@ -249,6 +259,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
       uid: d.id,
       email: data.email as string,
       platform: data.platform as string,
+      mtAccountNumber: (data.mtAccountNumber as string) ?? "",
       displayName: data.displayName as string | undefined,
       createdAt: data.createdAt?.toDate?.() ?? new Date(),
     };
@@ -261,6 +272,20 @@ export async function getUserSubscription(uid: string): Promise<Subscription | n
   const snap = await getDoc(doc(db, "subscriptions", uid));
   if (!snap.exists()) return null;
   return parseSubscriptionDoc(uid, snap.data());
+}
+
+export async function getSubscriptionByLicenseKey(
+  licenseKey: string,
+): Promise<Subscription | null> {
+  const key = licenseKey.trim().toUpperCase();
+  if (!key) return null;
+
+  const snap = await getDocs(
+    query(collection(db, "subscriptions"), where("licenseKey", "==", key)),
+  );
+  if (snap.empty) return null;
+  const docSnap = snap.docs[0];
+  return parseSubscriptionDoc(docSnap.id, docSnap.data());
 }
 
 /** Active subscription → access to every bot in the catalogue */
@@ -292,11 +317,13 @@ export async function upsertSubscription(uid: string, data: SubscriptionInput): 
   const validUntil =
     data.validUntil !== undefined ? data.validUntil : computeValidUntil(data.billingPeriod);
 
+  const licenseKey = (data.licenseKey ?? generateLicenseKey()).trim().toUpperCase();
+
   const payload: DocumentData = {
     billingPeriod: data.billingPeriod,
     status: data.status ?? "active",
     mtAccountNumber: data.mtAccountNumber ?? "",
-    licenseKey: data.licenseKey ?? generateLicenseKey(),
+    licenseKey,
     validUntil,
     updatedAt: serverTimestamp(),
   };

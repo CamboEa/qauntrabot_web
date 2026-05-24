@@ -13,10 +13,11 @@ import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscri
 
 export default function DashboardTradingAccount() {
   const { profile } = useAuth();
-  const { subscription, loading, active, email, platform } = useDashboard();
+  const { subscription, loading, active, email, platform, mtAccountNumber } = useDashboard();
   const [copied, setCopied] = useState(false);
 
-  const mtAccount = subscription?.mtAccountNumber?.trim() || "";
+  const mtAccount = mtAccountNumber;
+  const hasProfileOnly = !subscription?.mtAccountNumber && Boolean(profile?.mtAccountNumber);
 
   const handleCopyAccount = async () => {
     if (!mtAccount) return;
@@ -41,21 +42,28 @@ export default function DashboardTradingAccount() {
 
       {loading ? (
         <div className="card-surface card-pad h-48 animate-pulse" />
-      ) : !subscription ? (
+      ) : !mtAccount ? (
         <p className="text-sm text-muted-foreground">
-          Subscribe first — we&apos;ll link your MT account when your subscription is activated.
+          No trading account on file. Add your MT login when registering, or contact support.
         </p>
       ) : (
         <div className="stack-6">
           <div className="card-surface card-pad stack-4 border-primary/15">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
               <ContentHeading icon={Monitor}>Linked trading account</ContentHeading>
-              {active && (
-                <span className="inline-flex items-center gap-1 text-xs font-data text-profit px-2 py-1 rounded-full bg-profit/10 border border-profit/20">
-                  <ShieldCheck size={12} />
-                  Active
-                </span>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {hasProfileOnly && (
+                  <span className="inline-flex items-center text-xs font-data text-muted-foreground px-2 py-1 rounded-full bg-secondary border border-border">
+                    Registered at sign-up
+                  </span>
+                )}
+                {active && subscription && (
+                  <span className="inline-flex items-center gap-1 text-xs font-data text-profit px-2 py-1 rounded-full bg-profit/10 border border-profit/20">
+                    <ShieldCheck size={12} />
+                    Licensed
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="meta-cell stack-3 py-6 text-center sm:text-left">
@@ -86,20 +94,31 @@ export default function DashboardTradingAccount() {
                 <dt className="stat-label normal-case text-[0.65rem]">Platform</dt>
                 <dd className="font-medium mt-1">{platform}</dd>
               </div>
-              <div className="meta-cell">
-                <dt className="stat-label normal-case text-[0.65rem]">Plan</dt>
-                <dd className="font-medium mt-1">{BILLING_PERIOD_LABEL[subscription.billingPeriod]}</dd>
-              </div>
-              <div className="meta-cell">
-                <dt className="stat-label normal-case text-[0.65rem]">Valid until</dt>
-                <dd className="font-data mt-1">{formatDisplayDate(subscription.validUntil)}</dd>
-              </div>
-              <div className="meta-cell">
-                <dt className="stat-label normal-case text-[0.65rem]">Status</dt>
-                <dd className={`font-medium mt-1 ${active ? "text-profit" : ""}`}>
-                  {active ? "Active" : subscription.status}
-                </dd>
-              </div>
+              {subscription ? (
+                <>
+                  <div className="meta-cell">
+                    <dt className="stat-label normal-case text-[0.65rem]">Plan</dt>
+                    <dd className="font-medium mt-1">
+                      {BILLING_PERIOD_LABEL[subscription.billingPeriod]}
+                    </dd>
+                  </div>
+                  <div className="meta-cell">
+                    <dt className="stat-label normal-case text-[0.65rem]">Valid until</dt>
+                    <dd className="font-data mt-1">{formatDisplayDate(subscription.validUntil)}</dd>
+                  </div>
+                  <div className="meta-cell">
+                    <dt className="stat-label normal-case text-[0.65rem]">Subscription</dt>
+                    <dd className={`font-medium mt-1 ${active ? "text-profit" : ""}`}>
+                      {active ? "Active" : subscription.status}
+                    </dd>
+                  </div>
+                </>
+              ) : (
+                <div className="meta-cell sm:col-span-1">
+                  <dt className="stat-label normal-case text-[0.65rem]">Subscription</dt>
+                  <dd className="font-medium mt-1 text-muted-foreground">Not active yet</dd>
+                </div>
+              )}
             </dl>
           </div>
 

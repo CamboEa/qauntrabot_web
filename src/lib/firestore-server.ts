@@ -123,6 +123,20 @@ export async function deleteBot(botId: string): Promise<void> {
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const snap = await db().collection("users").doc(uid).get();
+  if (!snap.exists) return null;
+  const data = snap.data()!;
+  return {
+    uid: snap.id,
+    email: data.email as string,
+    platform: data.platform as string,
+    mtAccountNumber: (data.mtAccountNumber as string) ?? "",
+    displayName: data.displayName as string | undefined,
+    createdAt: toDate(data.createdAt),
+  };
+}
+
 export async function getAllUsers(): Promise<UserProfile[]> {
   const snap = await db().collection("users").orderBy("createdAt", "desc").get();
   return snap.docs.map((d) => {
@@ -131,6 +145,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
       uid: d.id,
       email: data.email as string,
       platform: data.platform as string,
+      mtAccountNumber: (data.mtAccountNumber as string) ?? "",
       displayName: data.displayName as string | undefined,
       createdAt: toDate(data.createdAt),
     };
@@ -139,7 +154,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 
 export async function createUserProfile(
   uid: string,
-  data: { email: string; platform: string; displayName?: string }
+  data: { email: string; platform: string; mtAccountNumber: string; displayName?: string }
 ): Promise<void> {
   await db()
     .collection("users")
@@ -149,6 +164,13 @@ export async function createUserProfile(
       uid,
       createdAt: FieldValue.serverTimestamp(),
     });
+}
+
+export async function updateUserProfile(
+  uid: string,
+  data: Partial<Pick<UserProfile, "platform" | "mtAccountNumber" | "displayName">>
+): Promise<void> {
+  await db().collection("users").doc(uid).update(data as DocumentData);
 }
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
@@ -189,6 +211,23 @@ export async function getUserSubscription(uid: string): Promise<Subscription | n
   return parseSubscriptionDoc(uid, snap.data()!);
 }
 
+export async function getSubscriptionByLicenseKey(
+  licenseKey: string,
+): Promise<Subscription | null> {
+  const key = licenseKey.trim().toUpperCase();
+  if (!key) return null;
+
+  const snap = await db()
+    .collection("subscriptions")
+    .where("licenseKey", "==", key)
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return parseSubscriptionDoc(doc.id, doc.data());
+}
+
 export async function upsertSubscription(uid: string, data: SubscriptionInput): Promise<void> {
   const ref = db().collection("subscriptions").doc(uid);
   const existing = await ref.get();
@@ -197,11 +236,13 @@ export async function upsertSubscription(uid: string, data: SubscriptionInput): 
       ? data.validUntil
       : computeValidUntil(data.billingPeriod);
 
+  const licenseKey = (data.licenseKey ?? generateLicenseKey()).trim().toUpperCase();
+
   const payload: DocumentData = {
     billingPeriod: data.billingPeriod,
     status: data.status ?? "active",
     mtAccountNumber: data.mtAccountNumber ?? "",
-    licenseKey: data.licenseKey ?? generateLicenseKey(),
+    licenseKey,
     validUntil,
     updatedAt: FieldValue.serverTimestamp(),
   };

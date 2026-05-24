@@ -9,7 +9,7 @@ import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscriptionAlerts";
 
 export default function DashboardLicense() {
-  const { subscription, loading, active, platform } = useDashboard();
+  const { subscription, loading, active, platform, mtAccountNumber } = useDashboard();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -55,7 +55,7 @@ export default function DashboardLicense() {
             <ContentHeading icon={Key}>Your license</ContentHeading>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Locked to MT account{" "}
-              <strong className="font-data text-foreground">{subscription.mtAccountNumber}</strong> on{" "}
+              <strong className="font-data text-foreground">{mtAccountNumber}</strong> on{" "}
               <strong>{platform}</strong>.
             </p>
             <div className="meta-cell flex items-center gap-3">
@@ -84,7 +84,7 @@ export default function DashboardLicense() {
             <Monitor size={18} className="text-primary shrink-0" />
             <div className="min-w-0">
               <p className="font-medium text-foreground text-sm">Trading account</p>
-              <p className="text-xs text-muted-foreground font-data">{subscription.mtAccountNumber}</p>
+              <p className="text-xs text-muted-foreground font-data">{mtAccountNumber}</p>
             </div>
             <ArrowRight size={16} className="ml-auto text-muted-foreground shrink-0" />
           </Link>
