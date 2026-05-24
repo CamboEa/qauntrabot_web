@@ -46,7 +46,7 @@ export default function DashboardOverviewStats({
   return (
     <div className="stack-3">
       {syncedLabel && (
-        <p className="text-xs font-data text-muted-foreground">{syncedLabel} · from MT5 EA</p>
+        <p className="text-xs font-data text-muted-foreground">{syncedLabel} · auto-sync while EA is on chart</p>
       )}
       <div className={`dashboard-grid-stats ${compact ? "" : "dashboard-grid-stats--wide"}`}>
       {!compact && (

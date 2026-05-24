@@ -13,6 +13,9 @@ CTrade trade;
 static string   g_qb_lastError = "";
 static datetime g_qb_nextCheck = 0;
 static datetime g_qb_lastReport = 0;
+static double   g_qb_lastBal = -1.0;
+static double   g_qb_lastEq = -1.0;
+static double   g_qb_lastProfit = -1.0;
 
 bool QauntraBotParseValid(const string body)
 {
@@ -151,11 +154,8 @@ bool QauntraBotVerifyLicense(
    return false;
 }
 
-bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds, const bool forceNow = false)
+bool QauntraBotPushTradingStats(const string licenseKey)
 {
-   if(!forceNow && syncSeconds > 0 && g_qb_lastReport > 0 && TimeCurrent() - g_qb_lastReport < syncSeconds)
-      return true;
-
    string key = licenseKey;
    StringTrimLeft(key);
    StringTrimRight(key);
@@ -187,10 +187,42 @@ bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds
    if(code == 200)
    {
       g_qb_lastReport = TimeCurrent();
-      Print("QauntraBot: balance synced | ", DoubleToString(balance, 2), " ", currency);
+      g_qb_lastBal = balance;
+      g_qb_lastEq = equity;
+      g_qb_lastProfit = profit;
       return true;
    }
-   Print("QauntraBot: balance sync failed HTTP ", code);
+   return false;
+}
+
+// Upload when balance/equity/profit changes (bot, manual trade, deposit) — not on a fixed timer only.
+bool QauntraBotAutoSyncBalance(const string licenseKey, const bool forceNow = false)
+{
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   double equity  = AccountInfoDouble(ACCOUNT_EQUITY);
+   double profit  = AccountInfoDouble(ACCOUNT_PROFIT);
+
+   const double changeEps = 0.01;
+   bool firstSync = (g_qb_lastBal < 0.0);
+   bool changed = firstSync
+      || (MathAbs(balance - g_qb_lastBal) >= changeEps)
+      || (MathAbs(equity - g_qb_lastEq) >= changeEps)
+      || (MathAbs(profit - g_qb_lastProfit) >= changeEps);
+
+   int minGap = MathMax(2, InpBalanceSyncMinSeconds);
+   int heartbeat = MathMax(30, InpBalanceHeartbeatSeconds);
+   bool rateOk = forceNow || g_qb_lastReport == 0 || (TimeCurrent() - g_qb_lastReport >= minGap);
+   bool heartbeatDue = g_qb_lastReport == 0 || (TimeCurrent() - g_qb_lastReport >= heartbeat);
+
+   if(!rateOk) return true;
+   if(!changed && !heartbeatDue && !forceNow) return true;
+
+   if(QauntraBotPushTradingStats(licenseKey))
+   {
+      if(changed || firstSync)
+         Print("QauntraBot: balance auto-synced | ", DoubleToString(balance, 2), " ", AccountInfoString(ACCOUNT_CURRENCY));
+      return true;
+   }
    return false;
 }
 
@@ -198,7 +230,8 @@ bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds
 input bool   InpRequireLicense        = true;   // Require online license check
 input string InpLicenseKey            = "";     // License key (QB-XXXX-XXXX-XXXX)
 input int    InpLicenseRecheckSeconds = 3600;   // Re-verify interval (seconds)
-input int    InpBalanceSyncSeconds    = 60;     // Sync balance to dashboard (seconds)
+input int    InpBalanceSyncMinSeconds = 3;      // Min seconds between uploads (when balance changes)
+input int    InpBalanceHeartbeatSeconds = 60;   // Also upload every N sec while EA is attached
 
 //=== GRID INPUTS ====================================================
 input int    GridStep        = 300;
@@ -736,7 +769,7 @@ int OnInit()
    g_licenseOk = true;
    Comment("");
    if(InpRequireLicense)
-      QauntraBotReportTradingStats(InpLicenseKey, InpBalanceSyncSeconds, true);
+      QauntraBotAutoSyncBalance(InpLicenseKey, true);
 
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(Slippage*10);
@@ -765,6 +798,19 @@ int OnInit()
 
    if(g_showDashboard) CreateDashboard();
    return INIT_SUCCEEDED;
+}
+
+void OnTradeTransaction(const MqlTradeTransaction& trans,
+                        const MqlTradeRequest& request,
+                        const MqlTradeResult& result)
+{
+   if(!InpRequireLicense || !g_licenseOk) return;
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD
+      || trans.type == TRADE_TRANSACTION_DEAL_UPDATE
+      || trans.type == TRADE_TRANSACTION_HISTORY_ADD)
+   {
+      QauntraBotAutoSyncBalance(InpLicenseKey, true);
+   }
 }
 
 void OnDeinit(const int reason)
@@ -818,7 +864,7 @@ void OnTick()
    g_licenseOk = true;
    g_licenseAlerted = false;
    if(InpRequireLicense)
-      QauntraBotReportTradingStats(InpLicenseKey, InpBalanceSyncSeconds);
+      QauntraBotAutoSyncBalance(InpLicenseKey);
 
    if(g_showDashboard)
    {

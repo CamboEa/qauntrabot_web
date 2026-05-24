@@ -67,7 +67,7 @@ export default function DashboardTradingAccount() {
       <DashboardSectionHead
         eyebrow="Trading account"
         title="Your MT account"
-        description="Live balance from your EA and subscription linked to this account."
+        description="Balance updates automatically while your EA is attached — bot trades, manual trades, or deposits."
         aside={
           <button
             type="button"
@@ -127,8 +127,8 @@ export default function DashboardTradingAccount() {
             ) : (
               <DashboardCard variant="soft">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  <strong className="text-foreground">No live balance yet.</strong> Attach a licensed EA on
-                  this MT account — it syncs every few minutes while the EA is running.
+                  <strong className="text-foreground">No live balance yet.</strong> Attach your licensed EA
+                  on this MT account — balance syncs automatically when it changes.
                 </p>
                 {active && (
                   <Link

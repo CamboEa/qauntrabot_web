@@ -82,7 +82,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       fetchTradingSnapshot(user.uid).then(setTradingSnapshot);
     };
 
-    const intervalId = window.setInterval(poll, 30_000);
+    const intervalId = window.setInterval(poll, 15_000);
     const onFocus = () => poll();
     window.addEventListener("focus", onFocus);
 
