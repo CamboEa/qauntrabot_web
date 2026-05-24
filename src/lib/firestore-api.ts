@@ -38,6 +38,15 @@ export const updateUserProfile = (
   data: Parameters<typeof server.updateUserProfile>[1]
 ) => withFallback(() => server.updateUserProfile(uid, data), () => client.updateUserProfile(uid, data));
 
+export const updateTradingSnapshot = (
+  uid: string,
+  snapshot: Parameters<typeof server.updateTradingSnapshot>[1]
+) =>
+  withFallback(
+    () => server.updateTradingSnapshot(uid, snapshot),
+    () => client.updateTradingSnapshot(uid, snapshot),
+  );
+
 export const getUserSubscription = (uid: string) =>
   withFallback(() => server.getUserSubscription(uid), () => client.getUserSubscription(uid));
 

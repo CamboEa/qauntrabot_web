@@ -4,14 +4,199 @@
 #property version   "1.0"
 
 #include <Trade\Trade.mqh>
-#include "QauntraBotLicense.mqh"
 CTrade trade;
 
-//--- QauntraBot license (Dashboard → License) -------------------------
-input bool   InpRequireLicense       = true;
-input string InpLicenseKey           = "";
-input string InpLicenseApiUrl        = "https://qauntra-bot.vercel.app/api/license/verify";
-input int    InpLicenseRecheckSeconds= 3600;
+//--- QauntraBot license (inline — no separate .mqh file needed) ---------
+#define QAUNTRABOT_LICENSE_API "https://qauntra-bot.vercel.app/api/license/verify"
+#define QAUNTRABOT_TRADING_REPORT_API "https://qauntra-bot.vercel.app/api/trading/report"
+
+static string   g_qb_lastError = "";
+static datetime g_qb_nextCheck = 0;
+static datetime g_qb_lastReport = 0;
+
+bool QauntraBotParseValid(const string body)
+{
+   if(StringFind(body, "\"valid\":true") >= 0) return true;
+   if(StringFind(body, "\"valid\": true") >= 0) return true;
+   return false;
+}
+
+string QauntraBotParseJsonString(const string body, const string field)
+{
+   string needle = "\"" + field + "\":\"";
+   int p = StringFind(body, needle);
+   if(p < 0)
+   {
+      needle = "\"" + field + "\": \"";
+      p = StringFind(body, needle);
+   }
+   if(p < 0) return "";
+   p += StringLen(needle);
+   int q = StringFind(body, "\"", p);
+   if(q < 0) return "";
+   return StringSubstr(body, p, q - p);
+}
+
+string QauntraBotFriendlyError(
+   const string apiCode,
+   const string apiMessage,
+   const string terminalAccount,
+   const string licensedAccount
+)
+{
+   if(apiCode == "ACCOUNT_MISMATCH")
+   {
+      if(StringLen(licensedAccount) > 0 && StringLen(terminalAccount) > 0)
+         return "Wrong MT account!\n\n"
+                + "Licensed account: " + licensedAccount + "\n"
+                + "This terminal:    " + terminalAccount + "\n\n"
+                + "Log in to the correct MT account, or update your linked account at qauntra-bot.vercel.app";
+      return "Wrong MT account for this license.\n\n" + apiMessage
+             + "\n\nUpdate your account at qauntra-bot.vercel.app → Dashboard → Trading account.";
+   }
+   if(apiCode == "INVALID_KEY")
+      return "Invalid license key.\n\n"
+             + "Copy your key from qauntra-bot.vercel.app → Dashboard → License (starts with QB-).";
+   if(apiCode == "SUBSCRIPTION_INACTIVE")
+      return "Subscription inactive or expired.\n\n"
+             + "Renew at qauntra-bot.vercel.app/pricing to continue using this bot.";
+   if(apiCode == "NO_MT_ACCOUNT")
+      return "No MT account linked to this license.\n\n"
+             + "Register your account at qauntra-bot.vercel.app or ask support to link it.";
+   if(StringLen(apiMessage) > 0)
+      return apiMessage;
+   return "License denied. Check your key and MT account at qauntra-bot.vercel.app";
+}
+
+void QauntraBotShowLicenseError(const string title, const string detail)
+{
+   Comment(title, "\n\n", detail);
+   Alert(title, "\n\n", detail);
+}
+
+bool QauntraBotHttpGet(const string url, string &response, string &err)
+{
+   char data[];
+   char result[];
+   string resultHeaders;
+   ResetLastError();
+   int code = WebRequest("GET", url, "", 5000, data, result, resultHeaders);
+   if(code == -1)
+   {
+      err = "WebRequest blocked. In MT5: Tools > Options > Expert Advisors > check "
+            "\"Allow WebRequest for listed URL\" and add: https://qauntra-bot.vercel.app "
+            "then restart MT5.";
+      return false;
+   }
+   if(code != 200 && code != 403)
+   {
+      err = "HTTP " + IntegerToString(code);
+      return false;
+   }
+   response = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+   return true;
+}
+
+bool QauntraBotVerifyLicense(
+   const string licenseKey,
+   const string apiBaseUrl,
+   string &errorMessage,
+   const int recheckSeconds
+)
+{
+   if(recheckSeconds > 0 && TimeCurrent() < g_qb_nextCheck && g_qb_lastError == "")
+      return true;
+
+   string key = licenseKey;
+   StringTrimLeft(key);
+   StringTrimRight(key);
+   StringToUpper(key);
+   if(StringLen(key) < 8)
+   {
+      errorMessage = "Missing license key.\n\n"
+                     + "EA Inputs → InpLicenseKey → paste from qauntra-bot.vercel.app → Dashboard → License.";
+      g_qb_lastError = errorMessage;
+      return false;
+   }
+
+   string accountStr = IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN));
+   string base = apiBaseUrl;
+   StringTrimRight(base);
+   if(StringLen(base) > 0 && StringGetCharacter(base, StringLen(base) - 1) == '/')
+      base = StringSubstr(base, 0, StringLen(base) - 1);
+
+   string url = base + "?licenseKey=" + key + "&account=" + accountStr;
+   string body, err;
+   if(!QauntraBotHttpGet(url, body, err))
+   {
+      errorMessage = err;
+      g_qb_lastError = errorMessage;
+      return false;
+   }
+
+   if(QauntraBotParseValid(body))
+   {
+      errorMessage = "";
+      g_qb_lastError = "";
+      if(recheckSeconds > 0)
+         g_qb_nextCheck = TimeCurrent() + recheckSeconds;
+      return true;
+   }
+
+   string apiCode = QauntraBotParseJsonString(body, "code");
+   string apiMsg  = QauntraBotParseJsonString(body, "message");
+   string licensed = QauntraBotParseJsonString(body, "licensedAccount");
+   errorMessage = QauntraBotFriendlyError(apiCode, apiMsg, accountStr, licensed);
+   g_qb_lastError = errorMessage;
+   return false;
+}
+
+bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds)
+{
+   if(syncSeconds <= 0) return true;
+   if(TimeCurrent() - g_qb_lastReport < syncSeconds) return true;
+
+   string key = licenseKey;
+   StringTrimLeft(key);
+   StringTrimRight(key);
+   StringToUpper(key);
+   if(StringLen(key) < 8) return false;
+
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   double equity  = AccountInfoDouble(ACCOUNT_EQUITY);
+   double profit  = AccountInfoDouble(ACCOUNT_PROFIT);
+   string currency = AccountInfoString(ACCOUNT_CURRENCY);
+   string server   = AccountInfoString(ACCOUNT_SERVER);
+   string accountStr = IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN));
+
+   string json = StringFormat(
+      "{\"licenseKey\":\"%s\",\"account\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"profit\":%.2f,\"currency\":\"%s\",\"server\":\"%s\"}",
+      key, accountStr, balance, equity, profit, currency, server
+   );
+
+   char post[];
+   int n = StringToCharArray(json, post, 0, WHOLE_ARRAY, CP_UTF8);
+   if(n <= 1) return false;
+   ArrayResize(post, n - 1);
+
+   char result[];
+   string reqHeaders = "Content-Type: application/json\r\n";
+   string resHeaders;
+   ResetLastError();
+   int code = WebRequest("POST", QAUNTRABOT_TRADING_REPORT_API, reqHeaders, 8000, post, result, resHeaders);
+   if(code == 200)
+   {
+      g_qb_lastReport = TimeCurrent();
+      return true;
+   }
+   return false;
+}
+
+//--- QauntraBot license inputs (Dashboard → License) --------------------
+input bool   InpRequireLicense        = true;   // Require online license check
+input string InpLicenseKey            = "";     // License key (QB-XXXX-XXXX-XXXX)
+input int    InpLicenseRecheckSeconds = 3600;   // Re-verify interval (seconds)
+input int    InpBalanceSyncSeconds    = 300;    // Sync balance to dashboard (seconds)
 
 //=== GRID INPUTS ====================================================
 input int    GridStep        = 300;
@@ -530,7 +715,7 @@ bool VerifyQauntraBotLicense(string &err)
    if(!InpRequireLicense) return true;
    return QauntraBotVerifyLicense(
       InpLicenseKey,
-      InpLicenseApiUrl,
+      QAUNTRABOT_LICENSE_API,
       err,
       InpLicenseRecheckSeconds
    );
@@ -542,11 +727,14 @@ int OnInit()
    string licErr = "";
    if(!VerifyQauntraBotLicense(licErr))
    {
-      Print("LICENSE FAILED: ", licErr);
-      Alert("SuperFiveCentBot — ", licErr);
+      Print("LICENSE FAILED:\n", licErr);
+      QauntraBotShowLicenseError("QauntraBot — cannot start", licErr);
       return INIT_FAILED;
    }
    g_licenseOk = true;
+   Comment("");
+   if(InpRequireLicense)
+      QauntraBotReportTradingStats(InpLicenseKey, 0);
 
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(Slippage*10);
@@ -613,8 +801,8 @@ void OnTick()
       if(g_licenseOk)
       {
          g_licenseOk = false;
-         Print("LICENSE LOST: ", licErr);
-         Alert("SuperFiveCentBot — license lost: ", licErr);
+         Print("LICENSE LOST:\n", licErr);
+         QauntraBotShowLicenseError("QauntraBot — license lost", licErr);
          CloseAllPositions();
          ExpertRemove();
       }
@@ -627,6 +815,8 @@ void OnTick()
    }
    g_licenseOk = true;
    g_licenseAlerted = false;
+   if(InpRequireLicense)
+      QauntraBotReportTradingStats(InpLicenseKey, InpBalanceSyncSeconds);
 
    if(g_showDashboard)
    {

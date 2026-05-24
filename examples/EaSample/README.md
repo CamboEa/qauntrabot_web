@@ -6,10 +6,9 @@ Sample EA wired to the production license API on [qauntra-bot.vercel.app](https:
 
 | File | Role |
 |------|------|
-| `SuperFiveCentBot.mq5` | Strategy + license gate |
-| `QauntraBotLicense.mqh` | WebRequest helper (keep beside the `.mq5`) |
+| `SuperFiveCentBot.mq5` | **Only file you need** — strategy + license code built in |
 
-Copy **both** into `MQL5/Experts/` and compile in MetaEditor.
+Copy into `MQL5/Experts/` (or your `QuntraEa.mq5` after merging the license block) and **Compile** in MetaEditor → produces `.ex5`.
 
 ## Production setup
 
@@ -21,12 +20,7 @@ Copy **both** into `MQL5/Experts/` and compile in MetaEditor.
    https://qauntra-bot.vercel.app
    ```
 
-3. Attach the EA. Defaults are already set:
-
-   | Input | Default |
-   |--------|---------|
-   | InpLicenseApiUrl | `https://qauntra-bot.vercel.app/api/license/verify` |
-   | InpLicenseKey | *(paste from dashboard)* |
+3. Attach the EA → **Inputs** tab → paste **InpLicenseKey** from the dashboard.
 
 4. Run on the **same MT account** you registered with.
 

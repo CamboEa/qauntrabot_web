@@ -56,11 +56,32 @@ export default function DashboardSetup() {
         </div>
       )}
 
-      <div className="card-surface card-pad stack-3 text-sm">
-        <p className="text-muted-foreground">MT5 WebRequest allow list</p>
-        <code className="font-data text-xs break-all block text-foreground">{SITE_HOST}</code>
-        <p className="text-muted-foreground pt-2">EA input — License API URL</p>
-        <code className="font-data text-xs break-all block text-foreground">{LICENSE_VERIFY_URL}</code>
+      <div className="card-surface card-pad stack-4 text-sm border-primary/20">
+        <p className="font-medium text-foreground">MT5 — required before attaching the EA</p>
+        <ol className="stack-2 text-muted-foreground list-decimal list-inside">
+          <li>
+            <strong className="text-foreground">Tools → Options → Expert Advisors</strong>
+          </li>
+          <li>
+            Enable <strong className="text-foreground">Allow algorithmic trading</strong>
+          </li>
+          <li>
+            Enable <strong className="text-foreground">Allow WebRequest for listed URL</strong>
+          </li>
+          <li>
+            Click <strong className="text-foreground">Add</strong> and paste exactly:
+            <code className="font-data text-xs break-all block mt-1 text-foreground bg-muted/50 p-2 rounded">
+              https://{SITE_HOST}
+            </code>
+          </li>
+          <li>
+            <strong className="text-foreground">Restart MetaTrader 5</strong> (close fully, reopen)
+          </li>
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          License API (built into the EA):{" "}
+          <span className="font-data text-foreground">{LICENSE_VERIFY_URL}</span>
+        </p>
       </div>
 
       <div className="card-surface card-pad stack-4">

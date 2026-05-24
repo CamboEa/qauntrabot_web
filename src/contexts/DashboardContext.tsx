@@ -10,7 +10,14 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllBots, getUserSubscription, type BotDoc, type Subscription } from "@/lib/firestore";
+import {
+  getAllBots,
+  getUserProfile,
+  getUserSubscription,
+  type BotDoc,
+  type Subscription,
+  type TradingSnapshot,
+} from "@/lib/firestore";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
 import { resolveMtAccountNumber } from "@/lib/mt-account";
 
@@ -24,6 +31,7 @@ type DashboardContextValue = {
   mtAccountNumber: string;
   accessibleBots: BotDoc[];
   lockedBots: BotDoc[];
+  tradingSnapshot: TradingSnapshot | null;
   refresh: () => void;
 };
 
@@ -33,26 +41,31 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const { user, profile } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [bots, setBots] = useState<BotDoc[]>([]);
+  const [tradingSnapshot, setTradingSnapshot] = useState<TradingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!user) {
       setSubscription(null);
       setBots([]);
+      setTradingSnapshot(null);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const [sub, allBots] = await Promise.all([
+      const [sub, allBots, userProfile] = await Promise.all([
         getUserSubscription(user.uid),
         getAllBots(),
+        getUserProfile(user.uid),
       ]);
       setSubscription(sub);
       setBots(allBots);
+      setTradingSnapshot(userProfile?.tradingSnapshot ?? null);
     } catch {
       setSubscription(null);
       setBots([]);
+      setTradingSnapshot(null);
     } finally {
       setLoading(false);
     }
@@ -61,6 +74,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!user) return;
+    const id = window.setInterval(() => {
+      getUserProfile(user.uid).then((p) => {
+        if (p?.tradingSnapshot) setTradingSnapshot(p.tradingSnapshot);
+      });
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [user]);
 
   const active = subscription
     ? isSubscriptionActive(subscription.validUntil, subscription.status)
@@ -98,6 +121,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       mtAccountNumber,
       accessibleBots,
       lockedBots,
+      tradingSnapshot,
       refresh: load,
     }),
     [
@@ -110,6 +134,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       mtAccountNumber,
       accessibleBots,
       lockedBots,
+      tradingSnapshot,
       load,
     ],
   );

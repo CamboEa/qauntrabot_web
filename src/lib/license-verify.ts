@@ -32,7 +32,7 @@ export function verifyLicenseForAccount(
     return {
       valid: false,
       code: "INVALID_KEY",
-      message: "License key not found.",
+      message: "This license key was not found. Check Dashboard → License on the website.",
       expiresAt: null,
       licensedAccount: null,
     };
@@ -42,7 +42,7 @@ export function verifyLicenseForAccount(
     return {
       valid: false,
       code: "SUBSCRIPTION_INACTIVE",
-      message: "Subscription was cancelled.",
+      message: "Your subscription was cancelled. Renew to restore access.",
       expiresAt: subscription.validUntil?.toISOString() ?? null,
       licensedAccount: null,
     };
@@ -52,7 +52,7 @@ export function verifyLicenseForAccount(
     return {
       valid: false,
       code: "SUBSCRIPTION_INACTIVE",
-      message: "Subscription has expired.",
+      message: "Your subscription has expired. Renew to restore access.",
       expiresAt: subscription.validUntil?.toISOString() ?? null,
       licensedAccount: null,
     };
@@ -87,7 +87,7 @@ export function verifyLicenseForAccount(
     return {
       valid: false,
       code: "ACCOUNT_MISMATCH",
-      message: `License is locked to account ${licensedAccount}. This terminal is ${account}.`,
+      message: `Wrong account. Licensed: ${licensedAccount}. This MT login: ${account}.`,
       expiresAt: subscription.validUntil?.toISOString() ?? null,
       licensedAccount,
     };

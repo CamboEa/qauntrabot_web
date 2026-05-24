@@ -103,6 +103,16 @@ export type BotDoc = {
   updatedAt: Date;
 };
 
+/** Live stats reported from MT5 Expert Advisor (WebRequest). */
+export type TradingSnapshot = {
+  balance: number;
+  equity: number;
+  profit: number;
+  currency: string;
+  server?: string;
+  updatedAt: Date;
+};
+
 export type UserProfile = {
   uid: string;
   email: string;
@@ -111,7 +121,28 @@ export type UserProfile = {
   mtAccountNumber?: string;
   displayName?: string;
   createdAt: Date;
+  tradingSnapshot?: TradingSnapshot | null;
 };
+
+function parseTradingSnapshot(data: unknown): TradingSnapshot | null {
+  if (!data || typeof data !== "object") return null;
+  const s = data as Record<string, unknown>;
+  const updatedAt = s.updatedAt;
+  const updated = updatedAt instanceof Date
+    ? updatedAt
+    : updatedAt && typeof updatedAt === "object" && "toDate" in updatedAt
+      ? (updatedAt as { toDate: () => Date }).toDate()
+      : null;
+  if (!updated) return null;
+  return {
+    balance: Number(s.balance) || 0,
+    equity: Number(s.equity) || 0,
+    profit: Number(s.profit) || 0,
+    currency: (s.currency as string) || "USD",
+    server: (s.server as string) || undefined,
+    updatedAt: updated,
+  };
+}
 
 export type Subscription = {
   uid: string;
@@ -176,11 +207,24 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     mtAccountNumber: (data.mtAccountNumber as string) ?? "",
     displayName: data.displayName as string | undefined,
     createdAt: data.createdAt?.toDate?.() ?? new Date(),
+    tradingSnapshot: parseTradingSnapshot(data.tradingSnapshot),
   };
 }
 
 export async function updateUserProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
   await updateDoc(doc(db, "users", uid), data as DocumentData);
+}
+
+export async function updateTradingSnapshot(
+  uid: string,
+  snapshot: Omit<TradingSnapshot, "updatedAt">,
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid), {
+    tradingSnapshot: {
+      ...snapshot,
+      updatedAt: serverTimestamp(),
+    },
+  });
 }
 
 // ─── Subscription plans (pricing) ─────────────────────────────────────────────

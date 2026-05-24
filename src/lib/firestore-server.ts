@@ -21,6 +21,7 @@ import type {
   SubscriptionInput,
   SubscriptionPlanDoc,
   UserProfile,
+  TradingSnapshot,
 } from "./firestore";
 
 export type {
@@ -35,10 +36,26 @@ export type {
   SubscriptionPlanDoc,
   SubscriptionStatus,
   UserProfile,
+  TradingSnapshot,
 };
 
 function db() {
   return getAdminFirestore();
+}
+
+function parseTradingSnapshot(data: unknown): TradingSnapshot | null {
+  if (!data || typeof data !== "object") return null;
+  const s = data as Record<string, unknown>;
+  const updated = toDate(s.updatedAt);
+  if (!updated) return null;
+  return {
+    balance: Number(s.balance) || 0,
+    equity: Number(s.equity) || 0,
+    profit: Number(s.profit) || 0,
+    currency: (s.currency as string) || "USD",
+    server: (s.server as string) || undefined,
+    updatedAt: updated,
+  };
 }
 
 function toDate(value: unknown): Date {
@@ -134,6 +151,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     mtAccountNumber: (data.mtAccountNumber as string) ?? "",
     displayName: data.displayName as string | undefined,
     createdAt: toDate(data.createdAt),
+    tradingSnapshot: parseTradingSnapshot(data.tradingSnapshot),
   };
 }
 
@@ -148,8 +166,24 @@ export async function getAllUsers(): Promise<UserProfile[]> {
       mtAccountNumber: (data.mtAccountNumber as string) ?? "",
       displayName: data.displayName as string | undefined,
       createdAt: toDate(data.createdAt),
+      tradingSnapshot: parseTradingSnapshot(data.tradingSnapshot),
     };
   });
+}
+
+export async function updateTradingSnapshot(
+  uid: string,
+  snapshot: Omit<TradingSnapshot, "updatedAt">,
+): Promise<void> {
+  await db()
+    .collection("users")
+    .doc(uid)
+    .update({
+      tradingSnapshot: {
+        ...snapshot,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+    });
 }
 
 export async function createUserProfile(

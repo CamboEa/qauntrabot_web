@@ -31,3 +31,14 @@ export function daysUntil(value: unknown): number | null {
   if (!d) return null;
   return Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
+
+/** Human-readable “2 min ago” for snapshot timestamps. */
+export function formatRelativeTime(value: unknown): string {
+  const d = toDate(value);
+  if (!d) return "Never";
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 45) return "Just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} hr ago`;
+  return formatDisplayDate(d);
+}
