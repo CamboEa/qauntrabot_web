@@ -7,6 +7,7 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import ContentHeading from "@/components/shared/ContentHeading";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscriptionAlerts";
+import DashboardCard from "@/components/dashboard/DashboardCard";
 
 export default function DashboardLicense() {
   const { subscription, loading, active, platform, mtAccountNumber } = useDashboard();
@@ -48,11 +49,13 @@ export default function DashboardLicense() {
       />
 
       {loading ? (
-        <div className="card-surface card-pad h-40 animate-pulse" />
+        <div className="dashboard-skeleton" />
       ) : subscription ? (
-        <div className="stack-6">
-          <div className="card-surface card-pad stack-4">
-            <ContentHeading icon={Key}>Your license</ContentHeading>
+        <>
+          <DashboardCard variant="accent">
+            <ContentHeading icon={Key} as="h3">
+              Your license
+            </ContentHeading>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Locked to MT account{" "}
               <strong className="font-data text-foreground">{mtAccountNumber}</strong> on{" "}
@@ -75,20 +78,20 @@ export default function DashboardLicense() {
               <ShieldCheck size={14} />
               Full catalogue access — all live & beta bots
             </div>
-          </div>
+          </DashboardCard>
 
           <Link
             href="/dashboard/trading-account"
-            className="card-surface card-pad flex items-center gap-3 hover:border-primary/25 transition-colors"
+            className="dashboard-card !flex-row items-center gap-3 hover:border-primary/25 transition-colors"
           >
             <Monitor size={18} className="text-primary shrink-0" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="font-medium text-foreground text-sm">Trading account</p>
               <p className="text-xs text-muted-foreground font-data">{mtAccountNumber}</p>
             </div>
-            <ArrowRight size={16} className="ml-auto text-muted-foreground shrink-0" />
+            <ArrowRight size={16} className="text-muted-foreground shrink-0" />
           </Link>
-        </div>
+        </>
       ) : null}
     </div>
   );

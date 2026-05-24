@@ -4,12 +4,13 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
+import DashboardCard from "@/components/dashboard/DashboardCard";
 import { LICENSE_VERIFY_URL, SITE_HOST } from "@/lib/site-config";
 
 const SETUP_STEPS = [
   "Install the EA file on your MT5 terminal (File → Open Data Folder → MQL5/Experts).",
   `In MT5: Tools → Options → Expert Advisors → allow WebRequest for https://${SITE_HOST}`,
-  "Attach the EA, paste your license key, and set the license API URL below — run only on your registered MT account.",
+  "Attach the EA, paste your license key, and run only on your registered MT account.",
 ];
 
 export default function DashboardSetup() {
@@ -39,8 +40,8 @@ export default function DashboardSetup() {
       />
 
       {mtAccountNumber && (
-        <div className="card-surface card-pad stack-3 text-sm">
-          <p className="text-muted-foreground">
+        <DashboardCard variant="soft">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             Use account{" "}
             <span className="font-data font-medium text-foreground">{mtAccountNumber}</span> on{" "}
             <span className="font-medium text-foreground">{platform}</span>.{" "}
@@ -53,12 +54,12 @@ export default function DashboardSetup() {
               </>
             )}
           </p>
-        </div>
+        </DashboardCard>
       )}
 
-      <div className="card-surface card-pad stack-4 text-sm border-primary/20">
-        <p className="font-medium text-foreground">MT5 — required before attaching the EA</p>
-        <ol className="stack-2 text-muted-foreground list-decimal list-inside">
+      <DashboardCard variant="accent">
+        <p className="font-medium text-foreground text-sm">MT5 — required before attaching the EA</p>
+        <ol className="stack-2 text-sm text-muted-foreground list-decimal list-inside leading-relaxed">
           <li>
             <strong className="text-foreground">Tools → Options → Expert Advisors</strong>
           </li>
@@ -70,7 +71,7 @@ export default function DashboardSetup() {
           </li>
           <li>
             Click <strong className="text-foreground">Add</strong> and paste exactly:
-            <code className="font-data text-xs break-all block mt-1 text-foreground bg-muted/50 p-2 rounded">
+            <code className="font-data text-xs break-all block mt-2 text-foreground bg-muted/50 p-2 rounded-md">
               https://{SITE_HOST}
             </code>
           </li>
@@ -78,13 +79,13 @@ export default function DashboardSetup() {
             <strong className="text-foreground">Restart MetaTrader 5</strong> (close fully, reopen)
           </li>
         </ol>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground pt-1 border-t border-border">
           License API (built into the EA):{" "}
-          <span className="font-data text-foreground">{LICENSE_VERIFY_URL}</span>
+          <span className="font-data text-foreground break-all">{LICENSE_VERIFY_URL}</span>
         </p>
-      </div>
+      </DashboardCard>
 
-      <div className="card-surface card-pad stack-4">
+      <DashboardCard>
         <ol className="stack-4">
           {SETUP_STEPS.map((step, i) => (
             <li key={step} className="flex gap-3 text-sm text-foreground/90 leading-relaxed">
@@ -95,7 +96,7 @@ export default function DashboardSetup() {
             </li>
           ))}
         </ol>
-      </div>
+      </DashboardCard>
 
       <div className="flex flex-wrap gap-3">
         <Link href="/dashboard/bots" className="btn-primary-brand text-sm">

@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Copy,
   Check,
-  Bot,
   RefreshCw,
   Server,
 } from "lucide-react";
@@ -23,7 +22,9 @@ import ContentHeading from "@/components/shared/ContentHeading";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscriptionAlerts";
 import DashboardOverviewStats from "@/components/dashboard/DashboardOverviewStats";
-import DashboardBotRow from "@/components/dashboard/DashboardBotRow";
+import DashboardBlock from "@/components/dashboard/DashboardBlock";
+import DashboardCard from "@/components/dashboard/DashboardCard";
+import DashboardMetaItem from "@/components/dashboard/DashboardMetaItem";
 
 export default function DashboardTradingAccount() {
   const { profile } = useAuth();
@@ -34,8 +35,6 @@ export default function DashboardTradingAccount() {
     email,
     platform,
     mtAccountNumber,
-    accessibleBots,
-    lockedBots,
     tradingSnapshot,
     refresh,
   } = useDashboard();
@@ -45,7 +44,6 @@ export default function DashboardTradingAccount() {
   const mtAccount = mtAccountNumber;
   const hasProfileOnly = !subscription?.mtAccountNumber && Boolean(profile?.mtAccountNumber);
   const currency = tradingSnapshot?.currency ?? "USD";
-  const botList = active ? accessibleBots : lockedBots.length ? lockedBots : accessibleBots;
 
   const handleCopyAccount = async () => {
     if (!mtAccount) return;
@@ -69,13 +67,13 @@ export default function DashboardTradingAccount() {
       <DashboardSectionHead
         eyebrow="Trading account"
         title="Your MT account"
-        description="Live balance from your EA, subscription status, and bots linked to this account."
+        description="Live balance from your EA and subscription linked to this account."
         aside={
           <button
             type="button"
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            className="inline-flex items-center gap-1.5 text-xs font-data text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
+            className="btn-outline-brand text-xs !py-2 !px-3 cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             Refresh
@@ -86,73 +84,79 @@ export default function DashboardTradingAccount() {
       <DashboardSubscriptionAlerts />
 
       {loading ? (
-        <div className="card-surface card-pad h-48 animate-pulse" />
+        <div className="dashboard-skeleton" />
       ) : (
-        <div className="stack-8">
-          <section className="stack-4">
-            <h2 className="font-display text-sm font-bold text-foreground">Account overview</h2>
-            <DashboardOverviewStats showTradingAccountLink={false} />
-          </section>
-
-          {tradingSnapshot ? (
-            <div className="card-surface card-pad stack-4 border-primary/15">
-              <ContentHeading icon={Monitor}>Live MT5 stats</ContentHeading>
-              <p className="text-xs text-muted-foreground">
-                Updated {formatRelativeTime(tradingSnapshot.updatedAt)}
-                {tradingSnapshot.server ? (
-                  <>
-                    {" "}
-                    · <Server size={12} className="inline -mt-0.5" /> {tradingSnapshot.server}
-                  </>
-                ) : null}
-              </p>
-              <dl className="grid sm:grid-cols-3 gap-4">
-                <div className="meta-cell">
-                  <dt className="stat-label normal-case text-[0.65rem]">Balance</dt>
-                  <dd className="font-data text-xl font-bold mt-1">
-                    {formatMoney(tradingSnapshot.balance, currency)}
-                  </dd>
+        <>
+          <DashboardBlock
+            title={
+              <>
+                <Monitor size={16} className="text-primary" />
+                Live account
+              </>
+            }
+            action={
+              tradingSnapshot ? (
+                <span className="text-xs font-data text-muted-foreground inline-flex items-center gap-1">
+                  <Server size={12} />
+                  {formatRelativeTime(tradingSnapshot.updatedAt)}
+                </span>
+              ) : null
+            }
+          >
+            {tradingSnapshot ? (
+              <div className="dashboard-hero-stats">
+                <div className="dashboard-hero-stat">
+                  <p className="stat-label normal-case">Balance</p>
+                  <p className="dashboard-hero-value">{formatMoney(tradingSnapshot.balance, currency)}</p>
                 </div>
-                <div className="meta-cell">
-                  <dt className="stat-label normal-case text-[0.65rem]">Equity</dt>
-                  <dd className="font-data text-xl font-bold mt-1">
-                    {formatMoney(tradingSnapshot.equity, currency)}
-                  </dd>
+                <div className="dashboard-hero-stat">
+                  <p className="stat-label normal-case">Equity</p>
+                  <p className="dashboard-hero-value">{formatMoney(tradingSnapshot.equity, currency)}</p>
                 </div>
-                <div className="meta-cell">
-                  <dt className="stat-label normal-case text-[0.65rem]">Floating P/L</dt>
-                  <dd
-                    className={`font-data text-xl font-bold mt-1 ${
+                <div className="dashboard-hero-stat">
+                  <p className="stat-label normal-case">Floating P/L</p>
+                  <p
+                    className={`dashboard-hero-value ${
                       tradingSnapshot.profit >= 0 ? "text-profit" : "text-loss"
                     }`}
                   >
                     {formatMoney(tradingSnapshot.profit, currency)}
-                  </dd>
+                  </p>
                 </div>
-              </dl>
-            </div>
-          ) : (
-            <div className="card-surface card-pad stack-3 bg-secondary/30 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">No live balance yet.</strong> Attach a licensed EA on
-                this MT account — it syncs balance and equity to your dashboard every few minutes.
+              </div>
+            ) : (
+              <DashboardCard variant="soft">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">No live balance yet.</strong> Attach a licensed EA on
+                  this MT account — it syncs every few minutes while the EA is running.
+                </p>
+                {active && (
+                  <Link
+                    href="/dashboard/setup"
+                    className="text-sm text-primary font-medium inline-flex items-center gap-1 hover:underline w-fit"
+                  >
+                    Setup guide <ArrowRight size={14} />
+                  </Link>
+                )}
+              </DashboardCard>
+            )}
+            {tradingSnapshot?.server && (
+              <p className="text-xs font-data text-muted-foreground -mt-1">
+                Broker server: {tradingSnapshot.server}
               </p>
-              {active && (
-                <Link href="/dashboard/setup" className="text-primary font-medium inline-flex items-center gap-1 hover:underline w-fit">
-                  Setup guide <ArrowRight size={14} />
-                </Link>
-              )}
-            </div>
-          )}
+            )}
+          </DashboardBlock>
 
-          {!mtAccount ? (
-            <p className="text-sm text-muted-foreground">
-              No trading account on file. Add your MT login when registering, or contact support.
-            </p>
-          ) : (
-            <div className="card-surface card-pad stack-4 border-primary/15">
+          <DashboardBlock title="Subscription & access">
+            <DashboardOverviewStats showTradingAccountLink={false} compact />
+          </DashboardBlock>
+
+          {mtAccount ? (
+            <DashboardCard variant="accent">
               <div className="flex items-start justify-between gap-4 flex-wrap">
-                <ContentHeading icon={Monitor}>Linked trading account</ContentHeading>
+                <ContentHeading icon={Monitor} as="h3">
+                  Linked trading account
+                </ContentHeading>
                 <div className="flex flex-wrap gap-2">
                   {hasProfileOnly && (
                     <span className="inline-flex items-center text-xs font-data text-muted-foreground px-2 py-1 rounded-full bg-secondary border border-border">
@@ -168,118 +172,85 @@ export default function DashboardTradingAccount() {
                 </div>
               </div>
 
-              <div className="meta-cell stack-3 py-6 text-center sm:text-left">
-                <p className="stat-label normal-case">MT account number</p>
+              <div className="text-center sm:text-left py-2">
+                <p className="stat-label normal-case mb-2">MT account number</p>
                 <p className="font-data text-2xl sm:text-3xl font-bold text-foreground tracking-tight break-all">
                   {mtAccount}
                 </p>
                 <button
                   type="button"
                   onClick={handleCopyAccount}
-                  className="btn-outline-brand text-xs w-fit mx-auto sm:mx-0 cursor-pointer"
+                  className="btn-outline-brand text-xs w-fit mx-auto sm:mx-0 mt-4 cursor-pointer"
                 >
                   {copied ? <Check size={14} className="text-profit" /> : <Copy size={14} />}
                   {copied ? "Copied" : "Copy account number"}
                 </button>
               </div>
 
-              <dl className="grid sm:grid-cols-2 gap-4 text-sm">
-                <div className="meta-cell">
-                  <dt className="stat-label normal-case text-[0.65rem]">Platform</dt>
-                  <dd className="font-medium mt-1">{platform}</dd>
-                </div>
+              <div className="dashboard-meta-grid">
+                <DashboardMetaItem label="Platform" value={platform} />
                 {subscription ? (
                   <>
-                    <div className="meta-cell">
-                      <dt className="stat-label normal-case text-[0.65rem]">Plan</dt>
-                      <dd className="font-medium mt-1">
-                        {BILLING_PERIOD_LABEL[subscription.billingPeriod]}
-                      </dd>
-                    </div>
-                    <div className="meta-cell">
-                      <dt className="stat-label normal-case text-[0.65rem]">Valid until</dt>
-                      <dd className="font-data mt-1">{formatDisplayDate(subscription.validUntil)}</dd>
-                    </div>
-                    <div className="meta-cell">
-                      <dt className="stat-label normal-case text-[0.65rem]">Subscription</dt>
-                      <dd className={`font-medium mt-1 ${active ? "text-profit" : ""}`}>
-                        {active ? "Active" : subscription.status}
-                      </dd>
-                    </div>
+                    <DashboardMetaItem
+                      label="Plan"
+                      value={BILLING_PERIOD_LABEL[subscription.billingPeriod]}
+                    />
+                    <DashboardMetaItem
+                      label="Valid until"
+                      value={formatDisplayDate(subscription.validUntil)}
+                      mono
+                    />
+                    <DashboardMetaItem
+                      label="Subscription"
+                      value={active ? "Active" : subscription.status}
+                      valueClassName={active ? "text-profit" : ""}
+                    />
                   </>
                 ) : (
-                  <div className="meta-cell">
-                    <dt className="stat-label normal-case text-[0.65rem]">Subscription</dt>
-                    <dd className="font-medium mt-1 text-muted-foreground">Not active yet</dd>
-                  </div>
+                  <DashboardMetaItem label="Subscription" value="Not active yet" />
                 )}
-              </dl>
-            </div>
+              </div>
+            </DashboardCard>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No trading account on file. Add your MT login when registering, or contact support.
+            </p>
           )}
 
-          <section className="stack-4">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <h2 className="font-display text-sm font-bold text-foreground inline-flex items-center gap-2">
-                <Bot size={16} className="text-primary" />
-                {active ? "Your bots" : "Bot catalogue"}
-              </h2>
+          <div className="dashboard-grid-2">
+            <DashboardCard>
+              <ContentHeading icon={Mail} as="h3">
+                Login email
+              </ContentHeading>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Portal sign-in (separate from your MT account number).
+              </p>
+              <p className="font-medium break-all text-sm">{email}</p>
+              {profile?.createdAt && (
+                <p className="text-xs font-data text-muted-foreground">
+                  Member since {formatDisplayDate(profile.createdAt)}
+                </p>
+              )}
+            </DashboardCard>
+
+            <DashboardCard variant="soft">
+              <p className="text-sm text-foreground/90 leading-relaxed">
+                <strong>One account per license.</strong> EAs verify account{" "}
+                <span className="font-data">{mtAccount || "—"}</span> and sync balance to this page.
+              </p>
               {active && (
                 <Link
-                  href="/dashboard/bots"
-                  className="text-xs font-data text-primary inline-flex items-center gap-1 hover:underline"
+                  href="/dashboard/license"
+                  className="text-sm text-primary font-medium inline-flex items-center gap-1 hover:underline w-fit"
                 >
-                  View all <ArrowRight size={12} />
+                  <Key size={14} />
+                  View license key
+                  <ArrowRight size={14} />
                 </Link>
               )}
-            </div>
-            <div className="dashboard-bot-list">
-              {botList.slice(0, 4).map((bot) => (
-                <DashboardBotRow key={bot.id} bot={bot} canDownload={active} userPlatform={platform} />
-              ))}
-              {botList.length === 0 && (
-                <p className="text-sm text-muted-foreground py-6 text-center">No bots in the catalogue yet.</p>
-              )}
-            </div>
-            {!active && botList.length > 0 && (
-              <p className="text-sm text-muted-foreground text-center">
-                <Link href="/pricing" className="text-primary font-medium hover:underline">
-                  Subscribe
-                </Link>{" "}
-                to download EAs for this account.
-              </p>
-            )}
-          </section>
-
-          <div className="card-surface card-pad stack-4">
-            <ContentHeading icon={Mail}>Login email</ContentHeading>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Portal sign-in (separate from your MT account number).
-            </p>
-            <p className="font-medium break-all">{email}</p>
-            {profile?.createdAt && (
-              <p className="text-xs font-data text-muted-foreground">
-                Member since {formatDisplayDate(profile.createdAt)}
-              </p>
-            )}
+            </DashboardCard>
           </div>
-
-          <div className="card-surface card-pad stack-3 bg-secondary/30">
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              <strong>One account per license.</strong> EAs verify account{" "}
-              <span className="font-data">{mtAccount || "—"}</span> and sync balance to this page.
-            </p>
-            {active && (
-              <Link
-                href="/dashboard/license"
-                className="text-sm text-primary font-medium inline-flex items-center gap-1 hover:underline w-fit"
-              >
-                <Key size={14} />
-                View license key
-                <ArrowRight size={14} />
-              </Link>
-            )}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

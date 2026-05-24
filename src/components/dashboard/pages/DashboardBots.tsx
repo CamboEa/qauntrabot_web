@@ -30,7 +30,7 @@ export default function DashboardBots() {
       {loading ? (
         <div className="dashboard-bot-list">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="card-surface card-pad h-24 animate-pulse" />
+            <div key={n} className="dashboard-skeleton !min-h-[6rem]" />
           ))}
         </div>
       ) : (

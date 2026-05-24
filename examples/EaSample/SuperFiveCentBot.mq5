@@ -151,10 +151,10 @@ bool QauntraBotVerifyLicense(
    return false;
 }
 
-bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds)
+bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds, const bool forceNow = false)
 {
-   if(syncSeconds <= 0) return true;
-   if(TimeCurrent() - g_qb_lastReport < syncSeconds) return true;
+   if(!forceNow && syncSeconds > 0 && g_qb_lastReport > 0 && TimeCurrent() - g_qb_lastReport < syncSeconds)
+      return true;
 
    string key = licenseKey;
    StringTrimLeft(key);
@@ -187,8 +187,10 @@ bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds
    if(code == 200)
    {
       g_qb_lastReport = TimeCurrent();
+      Print("QauntraBot: balance synced | ", DoubleToString(balance, 2), " ", currency);
       return true;
    }
+   Print("QauntraBot: balance sync failed HTTP ", code);
    return false;
 }
 
@@ -196,7 +198,7 @@ bool QauntraBotReportTradingStats(const string licenseKey, const int syncSeconds
 input bool   InpRequireLicense        = true;   // Require online license check
 input string InpLicenseKey            = "";     // License key (QB-XXXX-XXXX-XXXX)
 input int    InpLicenseRecheckSeconds = 3600;   // Re-verify interval (seconds)
-input int    InpBalanceSyncSeconds    = 300;    // Sync balance to dashboard (seconds)
+input int    InpBalanceSyncSeconds    = 60;     // Sync balance to dashboard (seconds)
 
 //=== GRID INPUTS ====================================================
 input int    GridStep        = 300;
@@ -734,7 +736,7 @@ int OnInit()
    g_licenseOk = true;
    Comment("");
    if(InpRequireLicense)
-      QauntraBotReportTradingStats(InpLicenseKey, 0);
+      QauntraBotReportTradingStats(InpLicenseKey, InpBalanceSyncSeconds, true);
 
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(Slippage*10);

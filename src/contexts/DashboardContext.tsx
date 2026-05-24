@@ -12,12 +12,12 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getAllBots,
-  getUserProfile,
   getUserSubscription,
   type BotDoc,
   type Subscription,
   type TradingSnapshot,
 } from "@/lib/firestore";
+import { fetchTradingSnapshot } from "@/lib/trading-snapshot-client";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
 import { resolveMtAccountNumber } from "@/lib/mt-account";
 
@@ -54,14 +54,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
-      const [sub, allBots, userProfile] = await Promise.all([
+      const [sub, allBots, snapshot] = await Promise.all([
         getUserSubscription(user.uid),
         getAllBots(),
-        getUserProfile(user.uid),
+        fetchTradingSnapshot(user.uid),
       ]);
       setSubscription(sub);
       setBots(allBots);
-      setTradingSnapshot(userProfile?.tradingSnapshot ?? null);
+      setTradingSnapshot(snapshot);
     } catch {
       setSubscription(null);
       setBots([]);
@@ -77,12 +77,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const id = window.setInterval(() => {
-      getUserProfile(user.uid).then((p) => {
-        if (p?.tradingSnapshot) setTradingSnapshot(p.tradingSnapshot);
-      });
-    }, 60_000);
-    return () => window.clearInterval(id);
+
+    const poll = () => {
+      fetchTradingSnapshot(user.uid).then(setTradingSnapshot);
+    };
+
+    const intervalId = window.setInterval(poll, 30_000);
+    const onFocus = () => poll();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [user]);
 
   const active = subscription

@@ -4,14 +4,19 @@ import Link from "next/link";
 import { Bot, Calendar, CreditCard, Monitor, Sparkles, Wallet, TrendingUp, ArrowRight } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { BILLING_PERIOD_LABEL } from "@/lib/subscription-plans";
-import { daysUntil, formatDisplayDate } from "@/lib/dates";
+import { daysUntil, formatDisplayDate, formatRelativeTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/format-money";
 
 type Props = {
   showTradingAccountLink?: boolean;
+  /** Hide balance/equity (shown in hero on trading account page). */
+  compact?: boolean;
 };
 
-export default function DashboardOverviewStats({ showTradingAccountLink = true }: Props) {
+export default function DashboardOverviewStats({
+  showTradingAccountLink = true,
+  compact = false,
+}: Props) {
   const {
     subscription,
     loading,
@@ -22,39 +27,50 @@ export default function DashboardOverviewStats({ showTradingAccountLink = true }
     tradingSnapshot,
   } = useDashboard();
   const expiryDaysVal = daysUntil(subscription?.validUntil);
+  const currency = tradingSnapshot?.currency ?? "USD";
+  const syncedLabel = tradingSnapshot
+    ? `Updated ${formatRelativeTime(tradingSnapshot.updatedAt)}`
+    : null;
 
   if (loading) {
+    const count = compact ? 4 : 6;
     return (
-      <div className="dashboard-grid-stats">
-        {[1, 2, 3, 4, 5, 6].map((n) => (
-          <div key={n} className="card-surface card-pad h-24 animate-pulse" />
+      <div className={`dashboard-grid-stats ${compact ? "" : "dashboard-grid-stats--wide"}`}>
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="card-surface card-pad h-[5.5rem] animate-pulse" />
         ))}
       </div>
     );
   }
 
-  const currency = tradingSnapshot?.currency ?? "USD";
-
   return (
-    <div className="dashboard-grid-stats">
-      <div className="card-surface card-pad dashboard-stat-card">
-        <Wallet size={16} className="text-primary shrink-0" />
-        <div className="min-w-0">
-          <p className="dashboard-stat-label">Balance</p>
-          <p className="dashboard-stat-value font-data">
-            {tradingSnapshot ? formatMoney(tradingSnapshot.balance, currency) : "—"}
-          </p>
-        </div>
-      </div>
-      <div className="card-surface card-pad dashboard-stat-card">
-        <TrendingUp size={16} className="text-primary shrink-0" />
-        <div className="min-w-0">
-          <p className="dashboard-stat-label">Equity</p>
-          <p className="dashboard-stat-value font-data">
-            {tradingSnapshot ? formatMoney(tradingSnapshot.equity, currency) : "—"}
-          </p>
-        </div>
-      </div>
+    <div className="stack-3">
+      {syncedLabel && (
+        <p className="text-xs font-data text-muted-foreground">{syncedLabel} · from MT5 EA</p>
+      )}
+      <div className={`dashboard-grid-stats ${compact ? "" : "dashboard-grid-stats--wide"}`}>
+      {!compact && (
+        <>
+          <div className="card-surface card-pad dashboard-stat-card">
+            <Wallet size={16} className="text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="dashboard-stat-label">Balance</p>
+              <p className="dashboard-stat-value font-data">
+                {tradingSnapshot ? formatMoney(tradingSnapshot.balance, currency) : "—"}
+              </p>
+            </div>
+          </div>
+          <div className="card-surface card-pad dashboard-stat-card">
+            <TrendingUp size={16} className="text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="dashboard-stat-label">Equity</p>
+              <p className="dashboard-stat-value font-data">
+                {tradingSnapshot ? formatMoney(tradingSnapshot.equity, currency) : "—"}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
       <div className="card-surface card-pad dashboard-stat-card">
         <CreditCard size={16} className="text-primary shrink-0" />
         <div>
@@ -96,10 +112,10 @@ export default function DashboardOverviewStats({ showTradingAccountLink = true }
           </p>
         </div>
       </div>
-      {showTradingAccountLink ? (
+      {showTradingAccountLink && (
         <Link
           href="/dashboard/trading-account"
-          className="card-surface card-pad dashboard-stat-card hover:border-primary/30 transition-colors cursor-pointer sm:col-span-2"
+          className="card-surface card-pad dashboard-stat-card hover:border-primary/30 transition-colors cursor-pointer lg:col-span-1"
         >
           <Monitor size={16} className="text-primary shrink-0" />
           <div className="min-w-0 flex-1">
@@ -112,7 +128,8 @@ export default function DashboardOverviewStats({ showTradingAccountLink = true }
             </p>
           </div>
         </Link>
-      ) : null}
+      )}
+      </div>
     </div>
   );
 }
