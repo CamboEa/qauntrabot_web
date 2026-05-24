@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserSubscription } from "@/lib/firestore";
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
@@ -11,11 +13,14 @@ import {
   BILLING_PERIOD_LABEL,
   getDefaultPlans,
   type BillingPeriod,
+  isSubscriptionActive,
 } from "@/lib/subscription-plans";
 
 export default function PricingSection({ hideHeader = false }: { hideHeader?: boolean }) {
+  const { user } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlanDoc[]>(getDefaultPlans());
   const [loading, setLoading] = useState(true);
+  const [currentPeriod, setCurrentPeriod] = useState<BillingPeriod | null>(null);
 
   useEffect(() => {
     fetch("/api/plans")
@@ -26,6 +31,22 @@ export default function PricingSection({ hideHeader = false }: { hideHeader?: bo
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+  useEffect(() => {
+    if (!user) {
+      setCurrentPeriod(null);
+      return;
+    }
+
+    getUserSubscription(user.uid)
+      .then((sub) => {
+        if (sub && isSubscriptionActive(sub.validUntil, sub.status)) {
+          setCurrentPeriod(sub.billingPeriod);
+        } else {
+          setCurrentPeriod(null);
+        }
+      })
+      .catch(() => setCurrentPeriod(null));
+  }, [user]);
 
   return (
     <PageSection id="pricing" underHero={hideHeader} standalone={!hideHeader}>
@@ -49,6 +70,7 @@ export default function PricingSection({ hideHeader = false }: { hideHeader?: bo
         {plans.map((plan) => {
           const period = plan.id as BillingPeriod;
           const featured = Boolean(plan.highlighted);
+          const isCurrentPlan = currentPeriod === period;
 
           return (
             <div
@@ -112,17 +134,29 @@ export default function PricingSection({ hideHeader = false }: { hideHeader?: bo
                   )}
                 </div>
 
-                <Link
-                  href={`/register?plan=${period}`}
-                  className={`flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-full cursor-pointer mt-auto ${
-                    featured
-                      ? "bg-primary-foreground text-primary"
-                      : "btn-primary-brand w-full"
-                  }`}
-                >
-                  Subscribe
-                  <ArrowRight size={16} />
-                </Link>
+                {isCurrentPlan ? (
+                  <div
+                    className={`flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-full mt-auto ${
+                      featured
+                        ? "bg-primary-foreground/20 text-primary-foreground border border-primary-foreground/30"
+                        : "border border-primary/25 text-primary bg-primary/5"
+                    }`}
+                  >
+                    Current
+                  </div>
+                ) : (
+                  <Link
+                    href={`/register?plan=${period}`}
+                    className={`flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-full cursor-pointer mt-auto ${
+                      featured
+                        ? "bg-primary-foreground text-primary"
+                        : "btn-primary-brand w-full"
+                    }`}
+                  >
+                    Subscribe
+                    <ArrowRight size={16} />
+                  </Link>
+                )}
               </div>
 
               <p
