@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
+import { LICENSE_VERIFY_URL, SITE_HOST } from "@/lib/site-config";
 
 const SETUP_STEPS = [
   "Install the EA file on your MT4 or MT5 terminal (File → Open Data Folder → MQL5/Experts).",
