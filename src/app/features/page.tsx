@@ -1,11 +1,13 @@
-import type { Metadata } from "next";
 import PageWrapper from "@/components/layout/PageWrapper";
 import FeaturesSection from "@/components/sections/FeaturesSection";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Features — QauntraBot",
-  description: "Institutional-grade EA features: risk management, multi-asset, analytics, and secure licensing.",
-};
+export const metadata = createPageMetadata({
+  title: "Features",
+  description:
+    "Institutional-grade EA features: risk management, multi-asset, analytics, and secure licensing.",
+  path: "/features",
+});
 
 export default function FeaturesPage() {
   return (

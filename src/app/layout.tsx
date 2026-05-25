@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Syne, DM_Sans, IBM_Plex_Mono } from "next/font/google";
+import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { createRootMetadata } from "@/lib/seo";
 import "./globals.css";
 
 const syne = Syne({
@@ -24,19 +26,7 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "QauntraBot — Institutional-Grade Algorithmic Trading",
-  description:
-    "Automate your trading with QauntraBot's precision Expert Advisor. Engineered for MT4/MT5, featuring smart risk management, 24/7 execution, and institutional-grade performance.",
-  keywords: [
-    "expert advisor",
-    "algorithmic trading",
-    "forex EA",
-    "MT5 EA",
-    "automated trading",
-    "XAUUSD EA",
-  ],
-};
+export const metadata: Metadata = createRootMetadata();
 
 export default function RootLayout({
   children,
@@ -49,6 +39,7 @@ export default function RootLayout({
       className={`${syne.variable} ${dmSans.variable} ${ibmPlexMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <SiteJsonLd />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

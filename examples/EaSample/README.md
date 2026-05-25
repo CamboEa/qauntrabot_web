@@ -1,6 +1,6 @@
 # SuperFiveCentBot — QauntraBot license test
 
-Sample EA wired to the production license API on [qauntra-bot.vercel.app](https://qauntra-bot.vercel.app/).
+Sample EA wired to the production license API on [www.quantrabot.com](https://www.quantrabot.com/).
 
 ## Files
 
@@ -17,7 +17,7 @@ Copy into `MQL5/Experts/` (or your `QuntraEa.mq5` after merging the license bloc
 2. **MT5 → Tools → Options → Expert Advisors** — allow WebRequest:
 
    ```
-   https://qauntra-bot.vercel.app
+   https://www.quantrabot.com
    ```
 
 3. Attach the EA → **Inputs** tab → paste **InpLicenseKey** from the dashboard.
@@ -29,7 +29,7 @@ Experts log: `QauntraBot license OK | MT account …`
 ## API check
 
 ```bash
-curl "https://qauntra-bot.vercel.app/api/license/verify?licenseKey=QB-YOUR-KEY&account=YOUR_MT_LOGIN"
+curl "https://www.quantrabot.com/api/license/verify?licenseKey=QB-YOUR-KEY&account=YOUR_MT_LOGIN"
 ```
 
 ## Local dev (optional)

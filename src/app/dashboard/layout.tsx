@@ -1,12 +1,14 @@
-import type { Metadata } from "next";
 import DashboardGate from "@/components/dashboard/DashboardGate";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Dashboard — QauntraBot",
+export const metadata = createPageMetadata({
+  title: "Dashboard",
   description: "Manage your subscription, license, and Expert Advisor downloads.",
-};
+  path: "/dashboard",
+  noIndex: true,
+});
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

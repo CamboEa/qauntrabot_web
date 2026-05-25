@@ -1,14 +1,18 @@
-import type { Metadata } from "next";
 import PageWrapper from "@/components/layout/PageWrapper";
+import { FaqPageJsonLd } from "@/components/seo/JsonLd";
 import FAQSection from "@/components/sections/FAQSection";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "FAQs — QauntraBot",
+export const metadata = createPageMetadata({
+  title: "FAQs",
   description: "Answers about brokers, licensing, VPS setup, performance data, and support.",
-};
+  path: "/faqs",
+});
 
 export default function FAQsPage() {
   return (
+    <>
+      <FaqPageJsonLd />
     <PageWrapper
       hero={{
         eyebrow: "Support",
@@ -20,5 +24,6 @@ export default function FAQsPage() {
     >
       <FAQSection hideHeader />
     </PageWrapper>
+    </>
   );
 }

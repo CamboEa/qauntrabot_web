@@ -7,8 +7,8 @@
 CTrade trade;
 
 //--- QauntraBot license (inline — no separate .mqh file needed) ---------
-#define QAUNTRABOT_LICENSE_API "https://qauntra-bot.vercel.app/api/license/verify"
-#define QAUNTRABOT_TRADING_REPORT_API "https://qauntra-bot.vercel.app/api/trading/report"
+#define QAUNTRABOT_LICENSE_API "https://www.quantrabot.com/api/license/verify"
+#define QAUNTRABOT_TRADING_REPORT_API "https://www.quantrabot.com/api/trading/report"
 
 static string   g_qb_lastError = "";
 static datetime g_qb_nextCheck = 0;
@@ -53,22 +53,22 @@ string QauntraBotFriendlyError(
          return "Wrong MT account!\n\n"
                 + "Licensed account: " + licensedAccount + "\n"
                 + "This terminal:    " + terminalAccount + "\n\n"
-                + "Log in to the correct MT account, or update your linked account at qauntra-bot.vercel.app";
+                + "Log in to the correct MT account, or update your linked account at www.quantrabot.com";
       return "Wrong MT account for this license.\n\n" + apiMessage
-             + "\n\nUpdate your account at qauntra-bot.vercel.app → Dashboard → Trading account.";
+             + "\n\nUpdate your account at www.quantrabot.com → Dashboard → Trading account.";
    }
    if(apiCode == "INVALID_KEY")
       return "Invalid license key.\n\n"
-             + "Copy your key from qauntra-bot.vercel.app → Dashboard → License (starts with QB-).";
+             + "Copy your key from www.quantrabot.com → Dashboard → License (starts with QB-).";
    if(apiCode == "SUBSCRIPTION_INACTIVE")
       return "Subscription inactive or expired.\n\n"
-             + "Renew at qauntra-bot.vercel.app/pricing to continue using this bot.";
+             + "Renew at www.quantrabot.com/pricing to continue using this bot.";
    if(apiCode == "NO_MT_ACCOUNT")
       return "No MT account linked to this license.\n\n"
-             + "Register your account at qauntra-bot.vercel.app or ask support to link it.";
+             + "Register your account at www.quantrabot.com or ask support to link it.";
    if(StringLen(apiMessage) > 0)
       return apiMessage;
-   return "License denied. Check your key and MT account at qauntra-bot.vercel.app";
+   return "License denied. Check your key and MT account at www.quantrabot.com";
 }
 
 void QauntraBotShowLicenseError(const string title, const string detail)
@@ -87,7 +87,7 @@ bool QauntraBotHttpGet(const string url, string &response, string &err)
    if(code == -1)
    {
       err = "WebRequest blocked. In MT5: Tools > Options > Expert Advisors > check "
-            "\"Allow WebRequest for listed URL\" and add: https://qauntra-bot.vercel.app "
+            "\"Allow WebRequest for listed URL\" and add: https://www.quantrabot.com "
             "then restart MT5.";
       return false;
    }
@@ -117,7 +117,7 @@ bool QauntraBotVerifyLicense(
    if(StringLen(key) < 8)
    {
       errorMessage = "Missing license key.\n\n"
-                     + "EA Inputs → InpLicenseKey → paste from qauntra-bot.vercel.app → Dashboard → License.";
+                     + "EA Inputs → InpLicenseKey → paste from www.quantrabot.com → Dashboard → License.";
       g_qb_lastError = errorMessage;
       return false;
    }

@@ -3,7 +3,7 @@ export const SHOW_LIVE_RESULTS_PAGE = false;
 
 /** Public site origin (no trailing slash). Override with NEXT_PUBLIC_SITE_URL. */
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://qauntra-bot.vercel.app"
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://www.quantrabot.com"
 ).replace(/\/$/, "");
 
 /** EA license check endpoint — use as InpLicenseApiUrl in MetaTrader inputs. */

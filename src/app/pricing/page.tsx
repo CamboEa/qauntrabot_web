@@ -1,11 +1,13 @@
-import type { Metadata } from "next";
 import PageWrapper from "@/components/layout/PageWrapper";
 import PricingSection from "@/components/sections/PricingSection";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Pricing — QauntraBot",
-  description: "Transparent pricing for QauntraBot Expert Advisors. Instant delivery, hardware-locked licenses.",
-};
+export const metadata = createPageMetadata({
+  title: "Pricing",
+  description:
+    "Transparent pricing for QauntraBot Expert Advisors. Instant delivery, hardware-locked licenses.",
+  path: "/pricing",
+});
 
 export default function PricingPage() {
   return (

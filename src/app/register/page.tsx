@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import PageWrapper from "@/components/layout/PageWrapper";
 import RegistrationSection from "@/components/sections/RegistrationSection";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Get Access — QauntraBot",
+export const metadata = createPageMetadata({
+  title: "Get Access",
   description: "Create your QauntraBot account and access licensed Expert Advisors.",
-};
+  path: "/register",
+});
 
 export default function RegisterPage() {
   return (

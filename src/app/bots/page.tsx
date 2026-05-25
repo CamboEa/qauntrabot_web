@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
 import PageWrapper from "@/components/layout/PageWrapper";
 import BotsSection from "@/components/sections/BotsSection";
+import { createPageMetadata } from "@/lib/seo";
 import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
-export const metadata: Metadata = {
-  title: "Trading Bots — QauntraBot",
+export const metadata = createPageMetadata({
+  title: "Trading Bots",
   description: "Browse all available QauntraBot Expert Advisors for MT4 and MT5.",
-};
+  path: "/bots",
+});
 
 export default function BotsPage() {
   return (

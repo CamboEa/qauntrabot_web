@@ -54,20 +54,20 @@ string QauntraBotFriendlyError(
          return "Wrong MT account!\n\n"
                 + "Licensed account: " + licensedAccount + "\n"
                 + "This terminal:    " + terminalAccount + "\n\n"
-                + "Log in to the correct MT account, or update your linked account at qauntra-bot.vercel.app";
+                + "Log in to the correct MT account, or update your linked account at www.quantrabot.com";
       return "Wrong MT account for this license.\n\n" + apiMessage;
    }
    if(apiCode == "INVALID_KEY")
       return "Invalid license key.\n\n"
-             + "Copy from qauntra-bot.vercel.app → Dashboard → License (QB-…).";
+             + "Copy from www.quantrabot.com → Dashboard → License (QB-…).";
    if(apiCode == "SUBSCRIPTION_INACTIVE")
       return "Subscription inactive or expired.\n\n"
-             + "Renew at qauntra-bot.vercel.app/pricing.";
+             + "Renew at www.quantrabot.com/pricing.";
    if(apiCode == "NO_MT_ACCOUNT")
       return "No MT account linked to this license.\n\n"
-             + "Register at qauntra-bot.vercel.app or contact support.";
+             + "Register at www.quantrabot.com or contact support.";
    if(StringLen(apiMessage) > 0) return apiMessage;
-   return "License denied. Check qauntra-bot.vercel.app";
+   return "License denied. Check www.quantrabot.com";
 }
 
 void QauntraBotShowLicenseError(const string title, const string detail)
@@ -85,7 +85,7 @@ bool QauntraBotHttpGet(const string url, string &response, string &err)
    int code = WebRequest("GET", url, "", 5000, data, result, resultHeaders);
    if(code == -1)
    {
-      err = "WebRequest blocked.\n\nTools > Options > Expert Advisors > allow:\nhttps://qauntra-bot.vercel.app\nThen restart MT5.";
+      err = "WebRequest blocked.\n\nTools > Options > Expert Advisors > allow:\nhttps://www.quantrabot.com\nThen restart MT5.";
       return false;
    }
    if(code != 200 && code != 403)
