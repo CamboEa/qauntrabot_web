@@ -10,6 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { BotRuntimeStatus } from "@/lib/firestore";
+import { formatSymbolTimeframe } from "@/lib/chart-context";
 import { formatMoney } from "@/lib/format-money";
 import DashboardBlock from "@/components/dashboard/DashboardBlock";
 
@@ -91,7 +92,7 @@ export default function BotLiveSituation({ status, currency, botLabel }: Props) 
       }
       action={
         <span className="text-xs font-data text-muted-foreground">
-          {title} · {status.symbol}
+          {title} · {formatSymbolTimeframe(status.symbol, status.timeframe)}
         </span>
       }
     >
@@ -102,6 +103,10 @@ export default function BotLiveSituation({ status, currency, botLabel }: Props) 
             Status
           </h4>
           <dl className="bot-situation-dl">
+            <SituationRow
+              label="Chart"
+              value={formatSymbolTimeframe(status.symbol, status.timeframe)}
+            />
             <SituationRow label="Server time" value={status.serverTime ?? "—"} />
             <SituationRow
               label="Today P/L"

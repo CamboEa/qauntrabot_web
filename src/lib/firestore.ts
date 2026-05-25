@@ -115,6 +115,8 @@ export type BalanceHistoryPoint = {
 export type BotRuntimeStatus = {
   botName?: string;
   symbol: string;
+  /** Chart period the EA is attached to (e.g. M15, H1) */
+  timeframe?: string;
   serverTime?: string;
   todayPnl: number;
   dayTarget: number;

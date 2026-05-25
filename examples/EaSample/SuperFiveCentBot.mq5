@@ -170,6 +170,41 @@ string QauntraBotJsonEscape(string s)
    return out;
 }
 
+string QauntraBotChartTimeframe()
+{
+   switch((ENUM_TIMEFRAMES)Period())
+   {
+      case PERIOD_M1:   return "M1";
+      case PERIOD_M2:   return "M2";
+      case PERIOD_M3:   return "M3";
+      case PERIOD_M4:   return "M4";
+      case PERIOD_M5:   return "M5";
+      case PERIOD_M6:   return "M6";
+      case PERIOD_M10:  return "M10";
+      case PERIOD_M12:  return "M12";
+      case PERIOD_M15:  return "M15";
+      case PERIOD_M20:  return "M20";
+      case PERIOD_M30:  return "M30";
+      case PERIOD_H1:   return "H1";
+      case PERIOD_H2:   return "H2";
+      case PERIOD_H3:   return "H3";
+      case PERIOD_H4:   return "H4";
+      case PERIOD_H6:   return "H6";
+      case PERIOD_H8:   return "H8";
+      case PERIOD_H12:  return "H12";
+      case PERIOD_D1:   return "D1";
+      case PERIOD_W1:   return "W1";
+      case PERIOD_MN1:  return "MN1";
+      default:
+      {
+         string s = EnumToString((ENUM_TIMEFRAMES)Period());
+         if(StringFind(s, "PERIOD_") == 0)
+            return StringSubstr(s, 7);
+         return s;
+      }
+   }
+}
+
 string QauntraBotBuildBotStatusJson()
 {
    RefreshDayStartEquity();
@@ -227,9 +262,10 @@ string QauntraBotBuildBotStatusJson()
    string bAvgPart = bCnt>0 ? DoubleToString(bAvg, 8) : "null";
    string sAvgPart = sCnt>0 ? DoubleToString(sAvg, 8) : "null";
    bool hB=(bCnt>=HedgeOverrideLevels), hS=(sCnt>=HedgeOverrideLevels);
+   string chartTf = QauntraBotChartTimeframe();
    return StringFormat(
-      "{\"botName\":\"SuperFiveCentBot\",\"symbol\":\"%s\",\"serverTime\":\"%s\",\"todayPnl\":%.2f,\"dayTarget\":%.2f,\"floatingPnl\":%.2f,\"marketOpen\":%s,\"marketBlockReason\":\"%s\",\"emaPeriod\":%d,\"emaValue\":%s,\"emaDistancePips\":%s,\"emaSlopePips\":%s,\"emaTrend\":\"%s\",\"buyFilter\":\"%s\",\"sellFilter\":\"%s\",\"buyPositions\":%d,\"sellPositions\":%d,\"buyLots\":%.2f,\"sellLots\":%.2f,\"buyAvgEntry\":%s,\"sellAvgEntry\":%s,\"buyPnl\":%.2f,\"sellPnl\":%.2f,\"buySlArmed\":%s,\"sellSlArmed\":%s,\"buyHedgeOverride\":%s,\"sellHedgeOverride\":%s}",
-      QauntraBotJsonEscape(_Symbol), QauntraBotJsonEscape(timeStr), dayPnl, DailyProfitTargetUSD, floatPnl,
+      "{\"botName\":\"SuperFiveCentBot\",\"symbol\":\"%s\",\"timeframe\":\"%s\",\"serverTime\":\"%s\",\"todayPnl\":%.2f,\"dayTarget\":%.2f,\"floatingPnl\":%.2f,\"marketOpen\":%s,\"marketBlockReason\":\"%s\",\"emaPeriod\":%d,\"emaValue\":%s,\"emaDistancePips\":%s,\"emaSlopePips\":%s,\"emaTrend\":\"%s\",\"buyFilter\":\"%s\",\"sellFilter\":\"%s\",\"buyPositions\":%d,\"sellPositions\":%d,\"buyLots\":%.2f,\"sellLots\":%.2f,\"buyAvgEntry\":%s,\"sellAvgEntry\":%s,\"buyPnl\":%.2f,\"sellPnl\":%.2f,\"buySlArmed\":%s,\"sellSlArmed\":%s,\"buyHedgeOverride\":%s,\"sellHedgeOverride\":%s}",
+      QauntraBotJsonEscape(_Symbol), QauntraBotJsonEscape(chartTf), QauntraBotJsonEscape(timeStr), dayPnl, DailyProfitTargetUSD, floatPnl,
       marketBlocked ? "false" : "true", QauntraBotJsonEscape(blockReason), EMA_Period,
       emaValPart, distPart, slopePart, QauntraBotJsonEscape(trendStr), QauntraBotJsonEscape(buyFilter), QauntraBotJsonEscape(sellFilter),
       bCnt, sCnt, bLots, sLots, bAvgPart, sAvgPart, bPnl, sPnl,

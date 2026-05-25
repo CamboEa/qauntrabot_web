@@ -1,9 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Bot, Calendar, CreditCard, Monitor, Sparkles, Wallet, TrendingUp, ArrowRight } from "lucide-react";
+import {
+  Bot,
+  Calendar,
+  CandlestickChart,
+  CreditCard,
+  Monitor,
+  Sparkles,
+  Wallet,
+  TrendingUp,
+  ArrowRight,
+} from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { BILLING_PERIOD_LABEL } from "@/lib/subscription-plans";
+import { formatSymbolTimeframe } from "@/lib/chart-context";
 import { daysUntil, formatDisplayDate, formatRelativeTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/format-money";
 
@@ -103,6 +114,20 @@ export default function DashboardOverviewStats({
           )}
         </div>
       </div>
+      {tradingSnapshot?.botStatus && (
+        <div className="card-surface card-pad dashboard-stat-card">
+          <CandlestickChart size={16} className="text-primary shrink-0" />
+          <div className="min-w-0">
+            <p className="dashboard-stat-label">Attached chart</p>
+            <p className="dashboard-stat-value font-data text-sm">
+              {formatSymbolTimeframe(
+                tradingSnapshot.botStatus.symbol,
+                tradingSnapshot.botStatus.timeframe,
+              )}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="card-surface card-pad dashboard-stat-card">
         <Bot size={16} className="text-primary shrink-0" />
         <div>

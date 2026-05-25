@@ -23,6 +23,8 @@ import DashboardCard from "@/components/dashboard/DashboardCard";
 import DashboardMetaItem from "@/components/dashboard/DashboardMetaItem";
 import BalanceGrowthChart from "@/components/dashboard/BalanceGrowthChart";
 import BotLiveSituation from "@/components/dashboard/BotLiveSituation";
+import AttachedChartBadge from "@/components/dashboard/AttachedChartBadge";
+import { formatSymbolTimeframe } from "@/lib/chart-context";
 import ContentHeading from "@/components/shared/ContentHeading";
 
 export default function DashboardTradingAccount() {
@@ -103,6 +105,9 @@ export default function DashboardTradingAccount() {
           >
             {tradingSnapshot ? (
               <>
+                {tradingSnapshot.botStatus && (
+                  <AttachedChartBadge status={tradingSnapshot.botStatus} />
+                )}
                 <div className="dashboard-hero-stats dashboard-hero-stats--4">
                   <div className="dashboard-hero-stat">
                     <p className="stat-label normal-case">Balance</p>
@@ -232,12 +237,16 @@ export default function DashboardTradingAccount() {
               <div className="dashboard-meta-grid">
                 <DashboardMetaItem label="Platform" value={platform} />
                 <DashboardMetaItem
-                  label="Chart samples"
+                  label="Attached chart"
                   value={
-                    history.length > 0
-                      ? `${history.length} balance point${history.length === 1 ? "" : "s"}`
-                      : "Building…"
+                    tradingSnapshot?.botStatus
+                      ? formatSymbolTimeframe(
+                          tradingSnapshot.botStatus.symbol,
+                          tradingSnapshot.botStatus.timeframe,
+                        )
+                      : "—"
                   }
+                  mono
                 />
               </div>
             </DashboardCard>

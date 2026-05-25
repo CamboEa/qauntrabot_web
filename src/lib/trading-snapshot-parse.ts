@@ -29,6 +29,7 @@ export function parseBotRuntimeStatus(data: unknown): BotRuntimeStatus | null {
   return {
     botName: typeof s.botName === "string" ? s.botName : undefined,
     symbol,
+    timeframe: typeof s.timeframe === "string" ? s.timeframe : undefined,
     serverTime: typeof s.serverTime === "string" ? s.serverTime : undefined,
     todayPnl: Number(s.todayPnl) || 0,
     dayTarget: Number(s.dayTarget) || 0,

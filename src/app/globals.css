@@ -1236,6 +1236,35 @@
     height: 10.5rem;
     display: block;
   }
+  .attached-chart-badge {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+    background: color-mix(in srgb, var(--primary) 6%, var(--card));
+  }
+  .attached-chart-badge-pill {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.65rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+  }
+  @media (max-width: 480px) {
+    .attached-chart-badge-pill {
+      margin-left: 0;
+      width: 100%;
+      text-align: center;
+    }
+  }
   .bot-situation-panels {
     display: grid;
     gap: var(--space-md);
