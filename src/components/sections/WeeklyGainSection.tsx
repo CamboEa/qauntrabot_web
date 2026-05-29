@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Calendar, CheckCircle2, TrendingUp, Wallet } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
-import PageSection from "@/components/shared/PageSection";
 import ScrollReveal from "@/components/shared/ScrollReveal";
 import ProofPhonePair from "@/components/shared/ProofPhonePair";
 
@@ -35,9 +34,31 @@ const LIVE_PHONES = [
   },
 ] as const;
 
+// Photo by Jakub Żerdzicki on Unsplash (free licence)
+const BG_URL =
+  "https://images.unsplash.com/photo-1767424412548-1a1ac7f4b9bc?fm=jpg&q=80&w=1920&auto=format&fit=crop";
+
+const DARK_VARS = {
+  "--foreground": "#F4F2EB",
+  "--muted-foreground": "rgba(244,242,235,0.60)",
+  "--primary": "#93C5FD",
+  "--primary-foreground": "#0B1F3D",
+  "--card": "rgba(11,31,61,0.65)",
+  "--secondary": "rgba(11,31,61,0.50)",
+  "--border": "rgba(244,242,235,0.14)",
+  "--profit": "#34d399",
+  "--background": "rgba(11,31,61,0.60)",
+} as React.CSSProperties;
+
 export default function WeeklyGainSection() {
   return (
-    <PageSection id="weekly-gain" variant="white" standalone className="ring-motif">
+    <section
+      id="weekly-gain"
+      className="min-h-dvh flex items-center section-y relative overflow-hidden bg-[#0B1F3D]"
+      style={{ backgroundImage: `url('${BG_URL}')`, backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="container-site w-full relative z-10" style={DARK_VARS}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
         <ScrollReveal variant="left" className="stack-4 order-2 lg:order-1">
           <SectionHeader
@@ -96,6 +117,7 @@ export default function WeeklyGainSection() {
           />
         </ScrollReveal>
       </div>
-    </PageSection>
+      </div>
+    </section>
   );
 }

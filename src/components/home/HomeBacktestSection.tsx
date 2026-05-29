@@ -2,7 +2,6 @@
 
 import { BarChart2, CalendarDays, CheckCircle2, FlaskConical } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
-import PageSection from "@/components/shared/PageSection";
 import ScrollReveal from "@/components/shared/ScrollReveal";
 import ProofMediaShowcase, { type ProofMediaItem } from "@/components/shared/ProofMediaShowcase";
 
@@ -51,11 +50,34 @@ const BACKTEST_POINTS = [
   "Optimised for robustness across volatile and ranging market conditions",
 ];
 
+// Photo by rc.xyz NFT gallery on Unsplash (free licence)
+// Premium alternative (Unsplash+): https://plus.unsplash.com/premium_photo-1681487769650-a0c3fbaed85a?fm=jpg&q=80&w=1920&auto=format&fit=crop
+const BG_URL =
+  "https://images.unsplash.com/photo-1634542984003-e0fb8e200e91?fm=jpg&q=80&w=1920&auto=format&fit=crop";
+
+const DARK_VARS = {
+  "--foreground": "#F4F2EB",
+  "--muted-foreground": "rgba(244,242,235,0.60)",
+  "--primary": "#93C5FD",
+  "--primary-foreground": "#0B1F3D",
+  "--card": "rgba(11,31,61,0.65)",
+  "--secondary": "rgba(11,31,61,0.50)",
+  "--border": "rgba(244,242,235,0.14)",
+  "--profit": "#34d399",
+  "--background": "rgba(11,31,61,0.60)",
+} as React.CSSProperties;
+
 export default function HomeBacktestSection() {
   return (
-    <PageSection id="backtest" variant="cream" standalone>
-      <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-        <ScrollReveal variant="left" delay={60} className="order-1 lg:sticky lg:top-24">
+    <section
+      id="backtest"
+      className="min-h-dvh flex items-center section-y relative overflow-hidden bg-[#0B1F3D]"
+      style={{ backgroundImage: `url('${BG_URL}')`, backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <div className="absolute inset-0 bg-black/65" />
+      <div className="container-site w-full relative z-10" style={DARK_VARS}>
+      <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <ScrollReveal variant="left" delay={60} className="order-1">
           <ProofMediaShowcase items={BACKTEST_MEDIA} autoAdvance autoAdvanceMs={5000} />
         </ScrollReveal>
 
@@ -102,6 +124,7 @@ export default function HomeBacktestSection() {
           </ScrollReveal>
         </ScrollReveal>
       </div>
-    </PageSection>
+      </div>
+    </section>
   );
 }
