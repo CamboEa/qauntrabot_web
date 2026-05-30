@@ -232,7 +232,9 @@ export default function DashboardTradingAccount() {
                   <DashboardCard variant="soft">
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       <strong className="text-foreground">Bot situation not synced yet.</strong> Recompile
-                      the EA from the latest <span className="font-data">SuperFiveCentBot.mq5</span> sample
+                      the EA from the latest{" "}
+                      <span className="font-data">SuperFiveCentBot.mq5</span> or{" "}
+                      <span className="font-data">SuperFiveCentBotBTC.mq5</span> sample
                       and keep it attached — trend, market block, and grid stats will appear here.
                     </p>
                   </DashboardCard>
