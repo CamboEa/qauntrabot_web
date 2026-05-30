@@ -19,6 +19,9 @@ export function subscribeTradingSnapshot(
       }
       onUpdate(parseTradingSnapshot(snap.data().tradingSnapshot));
     },
-    () => onUpdate(null),
+    (err) => {
+      console.error("[trading-snapshot] Firestore listener error:", err);
+      onUpdate(null);
+    },
   );
 }

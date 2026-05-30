@@ -249,7 +249,7 @@ export default function BotLiveSituation({ status, currency, botLabel }: Props) 
 
       <p className="text-xs text-muted-foreground font-data flex items-center gap-1.5 mt-1">
         <Gauge size={12} />
-        Mirrors your MT5 on-chart dashboard. Recompile &amp; attach the EA to refresh — updates every ~60s or on balance change.
+        Mirrors your MT5 on-chart dashboard. Live stream — recompile the EA; updates every ~1–5s while attached.
       </p>
     </DashboardBlock>
   );

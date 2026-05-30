@@ -3,6 +3,16 @@ import { auth, db } from "@/lib/firebase";
 import type { TradingSnapshot } from "@/lib/firestore";
 import { parseTradingSnapshot } from "@/lib/trading-snapshot-parse";
 
+/** Keep the newest snapshot when Firestore + API poll overlap. */
+export function mergeTradingSnapshot(
+  prev: TradingSnapshot | null,
+  next: TradingSnapshot | null,
+): TradingSnapshot | null {
+  if (!next) return prev;
+  if (!prev) return next;
+  return next.updatedAt.getTime() >= prev.updatedAt.getTime() ? next : prev;
+}
+
 /** Fetch latest balance from API (server/Firestore admin) with Firestore server read fallback. */
 export async function fetchTradingSnapshot(uid: string): Promise<TradingSnapshot | null> {
   const user = auth.currentUser;

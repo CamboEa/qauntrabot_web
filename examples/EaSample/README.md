@@ -9,7 +9,15 @@ Sample EA wired to the production license API on [www.quantrabot.com](https://ww
 | `SuperFiveCentBot.mq5` | XAU / forex grid — Friday close + weekend pause + session filter |
 | `SuperFiveCentBotBTC.mq5` | **BTC / crypto 24/7** — no Fri/weekend close; opens BUY+SELL L1 together; trend filter off by default |
 
-Copy into `MQL5/Experts/` (or your `QuntraEa.mq5` after merging the license block) and **Compile** in MetaEditor → produces `.ex5`.
+### Live dashboard stream
+
+Both EAs push to `/api/trading/report` on a **1s timer** (configurable):
+
+- `InpStreamTimerMs = 1000` — timer push interval
+- `InpBalanceSyncMinSeconds = 1` — minimum gap between uploads
+- `InpBalanceHeartbeatSeconds = 5` — fallback if nothing changed
+
+Recompile and re-attach after pulling updates. The web dashboard polls + Firestore listener (~2s).
 
 ### SuperFiveCentBotBTC (BTCUSD, etc.)
 

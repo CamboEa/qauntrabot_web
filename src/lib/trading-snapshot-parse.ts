@@ -58,6 +58,7 @@ export function parseBotRuntimeStatus(data: unknown): BotRuntimeStatus | null {
     sellSlArmed: Boolean(s.sellSlArmed),
     buyHedgeOverride: Boolean(s.buyHedgeOverride),
     sellHedgeOverride: Boolean(s.sellHedgeOverride),
+    syncTs: s.syncTs !== undefined ? Number(s.syncTs) || undefined : undefined,
   };
 }
 

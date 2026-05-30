@@ -4,7 +4,7 @@
         "-std=c++17",
         "-D__MQL__",
         "-D__MQL5__",
-        "-include/Users/bunkheangheng/.cursor/extensions/ngsoftware.mql-clangd-1.1.45-universal/files/mql_clangd_compat.h",
+        "-include/Users/bunkheangheng/.cursor/extensions/ngsoftware.mql-clangd-1.1.54-universal/files/mql_clangd_compat.h",
         "-fms-extensions",
         "-fms-compatibility",
         "-ferror-limit=0",

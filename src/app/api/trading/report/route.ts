@@ -25,7 +25,7 @@ type ReportBody = {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const limit = checkRateLimit(`trading-report:${ip}`, 120, 60_000);
+    const limit = checkRateLimit(`trading-report:${ip}`, 300, 60_000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: "Too many requests" },

@@ -142,6 +142,8 @@ export type BotRuntimeStatus = {
   sellSlArmed: boolean;
   buyHedgeOverride: boolean;
   sellHedgeOverride: boolean;
+  /** Unix seconds — bumps each EA stream push for live dashboard */
+  syncTs?: number;
 };
 
 /** Live stats reported from MT5 Expert Advisor (WebRequest). */

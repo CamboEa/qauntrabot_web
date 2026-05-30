@@ -18,6 +18,8 @@ import {
   type TradingSnapshot,
 } from "@/lib/firestore";
 import { subscribeTradingSnapshot } from "@/lib/trading-snapshot-listener";
+import { fetchTradingSnapshot, mergeTradingSnapshot } from "@/lib/trading-snapshot-client";
+import { TRADING_STREAM_POLL_MS } from "@/lib/trading-stream";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
 import { resolveMtAccountNumber } from "@/lib/mt-account";
 
@@ -32,7 +34,7 @@ type DashboardContextValue = {
   accessibleBots: BotDoc[];
   lockedBots: BotDoc[];
   tradingSnapshot: TradingSnapshot | null;
-  refresh: () => void;
+  refresh: () => Promise<void>;
 };
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -43,6 +45,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [bots, setBots] = useState<BotDoc[]>([]);
   const [tradingSnapshot, setTradingSnapshot] = useState<TradingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const applySnapshot = useCallback((incoming: TradingSnapshot | null) => {
+    setTradingSnapshot((prev) => mergeTradingSnapshot(prev, incoming));
+  }, []);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -69,6 +75,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const refresh = useCallback(async () => {
+    await load();
+    if (!user) return;
+    const snap = await fetchTradingSnapshot(user.uid);
+    applySnapshot(snap);
+  }, [user, load, applySnapshot]);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -78,8 +91,27 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setTradingSnapshot(null);
       return;
     }
-    return subscribeTradingSnapshot(user.uid, setTradingSnapshot);
-  }, [user]);
+    return subscribeTradingSnapshot(user.uid, applySnapshot);
+  }, [user, applySnapshot]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      if (document.visibilityState === "hidden") return;
+      const snap = await fetchTradingSnapshot(user.uid);
+      if (!cancelled) applySnapshot(snap);
+    };
+
+    poll();
+    const id = window.setInterval(poll, TRADING_STREAM_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [user, applySnapshot]);
 
   const active = subscription
     ? isSubscriptionActive(subscription.validUntil, subscription.status)
@@ -118,7 +150,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       accessibleBots,
       lockedBots,
       tradingSnapshot,
-      refresh: load,
+      refresh,
     }),
     [
       subscription,
@@ -131,7 +163,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       accessibleBots,
       lockedBots,
       tradingSnapshot,
-      load,
+      refresh,
     ],
   );
 

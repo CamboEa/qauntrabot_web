@@ -16,6 +16,7 @@ static datetime g_qb_lastReport = 0;
 static double   g_qb_lastBal = -1.0;
 static double   g_qb_lastEq = -1.0;
 static double   g_qb_lastProfit = -1.0;
+static string   g_qb_lastBotStatusSent = "";
 
 bool QauntraBotParseValid(const string body)
 {
@@ -209,7 +210,7 @@ string QauntraBotBuildBotStatusJson()
    RefreshEmaCache();
    MqlDateTime sdt;
    TimeToStruct(TimeCurrent(), sdt);
-   string timeStr = DayName(sdt.day_of_week) + " " + TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES);
+   string timeStr = DayName(sdt.day_of_week) + " " + TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES|TIME_SECONDS);
    double dayPnl = AccountInfoDouble(ACCOUNT_EQUITY) - g_dayStartEquity;
    double floatPnl = GetFloatingPnlUsd();
    if(floatPnl < g_maxFloatingLossAll) g_maxFloatingLossAll = floatPnl;
@@ -262,15 +263,16 @@ string QauntraBotBuildBotStatusJson()
    bool hB=(bCnt>=HedgeOverrideLevels), hS=(sCnt>=HedgeOverrideLevels);
    string chartTf = QauntraBotChartTimeframe();
    return StringFormat(
-      "{\"botName\":\"SuperFiveCentBotBTC\",\"symbol\":\"%s\",\"timeframe\":\"%s\",\"serverTime\":\"%s\",\"todayPnl\":%.2f,\"dayTarget\":%.2f,\"floatingPnl\":%.2f,\"marketOpen\":%s,\"marketBlockReason\":\"%s\",\"emaPeriod\":%d,\"emaValue\":%s,\"emaDistancePips\":%s,\"emaSlopePips\":%s,\"emaTrend\":\"%s\",\"buyFilter\":\"%s\",\"sellFilter\":\"%s\",\"buyPositions\":%d,\"sellPositions\":%d,\"buyLots\":%.2f,\"sellLots\":%.2f,\"buyAvgEntry\":%s,\"sellAvgEntry\":%s,\"buyPnl\":%.2f,\"sellPnl\":%.2f,\"buySlArmed\":%s,\"sellSlArmed\":%s,\"buyHedgeOverride\":%s,\"sellHedgeOverride\":%s}",
+      "{\"botName\":\"SuperFiveCentBotBTC\",\"symbol\":\"%s\",\"timeframe\":\"%s\",\"serverTime\":\"%s\",\"todayPnl\":%.2f,\"dayTarget\":%.2f,\"floatingPnl\":%.2f,\"marketOpen\":%s,\"marketBlockReason\":\"%s\",\"emaPeriod\":%d,\"emaValue\":%s,\"emaDistancePips\":%s,\"emaSlopePips\":%s,\"emaTrend\":\"%s\",\"buyFilter\":\"%s\",\"sellFilter\":\"%s\",\"buyPositions\":%d,\"sellPositions\":%d,\"buyLots\":%.2f,\"sellLots\":%.2f,\"buyAvgEntry\":%s,\"sellAvgEntry\":%s,\"buyPnl\":%.2f,\"sellPnl\":%.2f,\"buySlArmed\":%s,\"sellSlArmed\":%s,\"buyHedgeOverride\":%s,\"sellHedgeOverride\":%s,\"syncTs\":%I64d}",
       QauntraBotJsonEscape(_Symbol), QauntraBotJsonEscape(chartTf), QauntraBotJsonEscape(timeStr), dayPnl, DailyProfitTargetUSD, floatPnl,
       marketBlocked ? "false" : "true", QauntraBotJsonEscape(blockReason), EMA_Period,
       emaValPart, distPart, slopePart, QauntraBotJsonEscape(trendStr), QauntraBotJsonEscape(buyFilter), QauntraBotJsonEscape(sellFilter),
       bCnt, sCnt, bLots, sLots, bAvgPart, sAvgPart, bPnl, sPnl,
-      g_buySLActive ? "true" : "false", g_sellSLActive ? "true" : "false", hB ? "true" : "false", hS ? "true" : "false");
+      g_buySLActive ? "true" : "false", g_sellSLActive ? "true" : "false", hB ? "true" : "false", hS ? "true" : "false",
+      (long)TimeCurrent());
 }
 
-bool QauntraBotPushTradingStats(const string licenseKey)
+bool QauntraBotPushTradingStats(const string licenseKey, const string botStatusJson)
 {
    string key = licenseKey;
    StringTrimLeft(key);
@@ -285,10 +287,9 @@ bool QauntraBotPushTradingStats(const string licenseKey)
    string server   = AccountInfoString(ACCOUNT_SERVER);
    string accountStr = IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN));
 
-   string botStatus = QauntraBotBuildBotStatusJson();
    string json = StringFormat(
       "{\"licenseKey\":\"%s\",\"account\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"profit\":%.2f,\"maxFloatingLoss\":%.2f,\"currency\":\"%s\",\"server\":\"%s\",\"botStatus\":%s}",
-      key, accountStr, balance, equity, profit, g_maxFloatingLossAll, currency, server, botStatus
+      key, accountStr, balance, equity, profit, g_maxFloatingLossAll, currency, server, botStatusJson
    );
 
    char post[];
@@ -312,32 +313,37 @@ bool QauntraBotPushTradingStats(const string licenseKey)
    return false;
 }
 
-// Upload when balance/equity/profit changes (bot, manual trade, deposit) — not on a fixed timer only.
+// Stream balance + bot dashboard to the web (balance, grid, filters, P/L).
 bool QauntraBotAutoSyncBalance(const string licenseKey, const bool forceNow = false)
 {
    double balance = AccountInfoDouble(ACCOUNT_BALANCE);
    double equity  = AccountInfoDouble(ACCOUNT_EQUITY);
    double profit  = AccountInfoDouble(ACCOUNT_PROFIT);
+   string botStatus = QauntraBotBuildBotStatusJson();
 
-   const double changeEps = 0.01;
+   const double changeEps = 0.005;
    bool firstSync = (g_qb_lastBal < 0.0);
-   bool changed = firstSync
+   bool balanceChanged = firstSync
       || (MathAbs(balance - g_qb_lastBal) >= changeEps)
       || (MathAbs(equity - g_qb_lastEq) >= changeEps)
       || (MathAbs(profit - g_qb_lastProfit) >= changeEps);
+   bool statusChanged = (botStatus != g_qb_lastBotStatusSent);
 
-   int minGap = MathMax(2, InpBalanceSyncMinSeconds);
-   int heartbeat = MathMax(30, InpBalanceHeartbeatSeconds);
+   int minGap = MathMax(1, InpBalanceSyncMinSeconds);
+   int heartbeat = MathMax(3, InpBalanceHeartbeatSeconds);
    bool rateOk = forceNow || g_qb_lastReport == 0 || (TimeCurrent() - g_qb_lastReport >= minGap);
    bool heartbeatDue = g_qb_lastReport == 0 || (TimeCurrent() - g_qb_lastReport >= heartbeat);
 
    if(!rateOk) return true;
-   if(!changed && !heartbeatDue && !forceNow) return true;
+   if(!balanceChanged && !statusChanged && !heartbeatDue && !forceNow) return true;
 
-   if(QauntraBotPushTradingStats(licenseKey))
+   if(QauntraBotPushTradingStats(licenseKey, botStatus))
    {
-      if(changed || firstSync)
-         Print("QauntraBot: balance auto-synced | ", DoubleToString(balance, 2), " ", AccountInfoString(ACCOUNT_CURRENCY));
+      g_qb_lastBotStatusSent = botStatus;
+      if(balanceChanged || firstSync || statusChanged)
+         Print("QauntraBot: live sync | bal=", DoubleToString(balance, 2),
+               " eq=", DoubleToString(equity, 2),
+               " flt=", DoubleToString(profit, 2));
       return true;
    }
    return false;
@@ -347,8 +353,9 @@ bool QauntraBotAutoSyncBalance(const string licenseKey, const bool forceNow = fa
 input bool   InpRequireLicense        = true;   // Require online license check
 input string InpLicenseKey            = "";     // License key (QB-XXXX-XXXX-XXXX)
 input int    InpLicenseRecheckSeconds = 3600;   // Re-verify interval (seconds)
-input int    InpBalanceSyncMinSeconds = 3;      // Min seconds between uploads (when balance changes)
-input int    InpBalanceHeartbeatSeconds = 60;   // Also upload every N sec while EA is attached
+input int    InpBalanceSyncMinSeconds = 1;      // Min seconds between live stream pushes
+input int    InpBalanceHeartbeatSeconds = 5;    // Force push at least every N sec
+input int    InpStreamTimerMs           = 1000; // Timer interval for streaming (0 = OnTick only)
 
 //=== GRID INPUTS ====================================================
 input int    GridStep        = 800;    // Grid distance (points/pips) — tune per broker BTC quote
@@ -873,6 +880,8 @@ int OnInit()
       Print("  L",i," -> ",DoubleToString(GetGridLot(i),2)," lots");
 
    if(g_showDashboard) CreateDashboard();
+   if(InpRequireLicense && InpStreamTimerMs > 0)
+      EventSetMillisecondTimer(InpStreamTimerMs);
    return INIT_SUCCEEDED;
 }
 
@@ -891,9 +900,16 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
 
 void OnDeinit(const int reason)
 {
+   EventKillTimer();
    DeleteDashboard();
    if(g_emaHandle!=INVALID_HANDLE) IndicatorRelease(g_emaHandle);
    Print("=== SuperFiveCentBot BTC v1.0 Stopped. Reason=",reason," ===");
+}
+
+void OnTimer()
+{
+   if(!InpRequireLicense || !g_licenseOk) return;
+   QauntraBotAutoSyncBalance(InpLicenseKey);
 }
 
 void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam)
