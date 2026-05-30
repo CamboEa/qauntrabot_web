@@ -11,12 +11,12 @@ import {
 } from "@/lib/subscription-plans";
 import type { Subscription, UserProfile } from "@/lib/firestore";
 import { formatDisplayDate } from "@/lib/dates";
+import { toast } from "@/lib/toast";
 
 export default function AdminSubscriptionsPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [uid, setUid] = useState("");
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
@@ -33,7 +33,7 @@ export default function AdminSubscriptionsPage() {
       setSubs(s);
       setUsers(u);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      toast.error(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -47,7 +47,7 @@ export default function AdminSubscriptionsPage() {
 
   const handleSave = async () => {
     if (!uid) {
-      alert("Select a user");
+      toast.warning("Select a user");
       return;
     }
     setSaving(true);
@@ -67,9 +67,10 @@ export default function AdminSubscriptionsPage() {
       setUid("");
       setMtAccount("");
       setBillingPeriod("monthly");
+      toast.success("Subscription assigned.");
       load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Save failed");
+      toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -79,9 +80,10 @@ export default function AdminSubscriptionsPage() {
     if (!confirm("Remove this subscription?")) return;
     try {
       await adminJson(`/api/admin/subscriptions/${subUid}`, { method: "DELETE" });
+      toast.success("Subscription removed.");
       load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Delete failed");
     }
   };
 
@@ -99,10 +101,6 @@ export default function AdminSubscriptionsPage() {
         </button>
       }
     >
-      {error && (
-        <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">{error}</div>
-      )}
-
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

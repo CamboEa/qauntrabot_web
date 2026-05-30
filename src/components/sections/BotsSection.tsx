@@ -8,6 +8,7 @@ import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
 import BotCatalogCard, { BotCatalogCardSkeleton } from "@/components/bots/BotCatalogCard";
 import { fetchSignedDownloadUrl } from "@/lib/download-client";
+import { toast } from "@/lib/toast";
 
 type Filter = "all" | "live" | "beta" | "soon";
 
@@ -49,8 +50,9 @@ export default function BotsSection({ hideHeader = false }: { hideHeader?: boole
       a.href = url;
       a.download = bot.fileKey.split("/").pop() ?? "bot.ex5";
       a.click();
+      toast.success("Download started.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Download failed. Please contact support.");
+      toast.error(err instanceof Error ? err.message : "Download failed. Please contact support.");
     } finally {
       setDownloadingId(null);
     }

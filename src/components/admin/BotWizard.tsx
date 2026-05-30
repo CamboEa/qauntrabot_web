@@ -15,6 +15,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { adminFetch, adminJson } from "@/lib/admin-client";
+import { toast } from "@/lib/toast";
 import { resolveBotStorageFolder, botStoragePrefix, slugifyBotFolder } from "@/lib/bot-storage";
 import type {
   BotDoc,
@@ -135,7 +136,6 @@ export default function BotWizard({
   const [eaPlatform, setEaPlatform] = useState<TradingPlatform>("MT5");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [stepError, setStepError] = useState<string | null>(null);
 
   const botId = isEdit
     ? slugifyBotFolder(editingId!)
@@ -179,7 +179,11 @@ export default function BotWizard({
       const res = await adminFetch("/api/admin/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      toast.success("File uploaded.");
       return data.key as string;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+      throw e;
     } finally {
       setUploading(false);
     }
@@ -230,15 +234,13 @@ export default function BotWizard({
   const goNext = () => {
     const err = validateStep(step);
     if (err) {
-      setStepError(err);
+      toast.warning(err);
       return;
     }
-    setStepError(null);
     setStep((s) => Math.min(5, s + 1));
   };
 
   const goBack = () => {
-    setStepError(null);
     setStep((s) => Math.max(1, s - 1));
   };
 
@@ -250,14 +252,14 @@ export default function BotWizard({
   const handleSave = async () => {
     const err = validateStep(5);
     if (err) {
-      setStepError(err);
+      toast.warning(err);
       return;
     }
     for (let s = 1; s <= 4; s++) {
       const e = validateStep(s);
       if (e) {
         setStep(s);
-        setStepError(e);
+        toast.warning(e);
         return;
       }
     }
@@ -285,9 +287,10 @@ export default function BotWizard({
           body: JSON.stringify({ id: botId, ...payload }),
         });
       }
+      toast.success(isEdit ? "Bot updated." : "Bot created.");
       router.push("/admin/bots");
     } catch (e) {
-      setStepError(e instanceof Error ? e.message : "Save failed");
+      toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -330,12 +333,6 @@ export default function BotWizard({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 stack-4">
-          {stepError && (
-            <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">
-              {stepError}
-            </div>
-          )}
-
           {step === 1 && (
             <div className="stack-4">
               <p className="text-sm text-muted-foreground">

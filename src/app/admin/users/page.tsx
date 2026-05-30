@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { adminJson } from "@/lib/admin-client";
+import { toast } from "@/lib/toast";
 import type { UserProfile } from "@/lib/firestore";
 import { formatDisplayDate } from "@/lib/dates";
 
@@ -12,7 +13,6 @@ const PLATFORMS = ["MetaTrader 5 (MT5)", "MetaTrader 4 (MT4)"] as const;
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<UserProfile | null>(null);
   const [platform, setPlatform] = useState<string>(PLATFORMS[0]);
   const [mtAccount, setMtAccount] = useState("");
@@ -23,7 +23,7 @@ export default function AdminUsersPage() {
     setLoading(true);
     adminJson<UserProfile[]>("/api/admin/users")
       .then(setUsers)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
   };
 
@@ -40,7 +40,6 @@ export default function AdminUsersPage() {
     );
     setMtAccount(user.mtAccountNumber ?? "");
     setSyncSubscription(true);
-    setError(null);
   };
 
   const closeEdit = () => {
@@ -51,7 +50,6 @@ export default function AdminUsersPage() {
   const handleSave = async () => {
     if (!editing) return;
     setSaving(true);
-    setError(null);
     try {
       const updated = await adminJson<UserProfile>(`/api/admin/users/${editing.uid}`, {
         method: "PATCH",
@@ -62,9 +60,10 @@ export default function AdminUsersPage() {
         }),
       });
       setUsers((prev) => prev.map((u) => (u.uid === updated.uid ? updated : u)));
+      toast.success("User updated.");
       closeEdit();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed");
+      toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -75,10 +74,6 @@ export default function AdminUsersPage() {
       title="Users"
       description="Edit trading account numbers and platforms for registered members."
     >
-      {error && (
-        <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">{error}</div>
-      )}
-
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

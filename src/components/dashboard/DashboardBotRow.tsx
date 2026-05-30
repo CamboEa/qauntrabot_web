@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Download, Lock } from "lucide-react";
 import type { BotDoc } from "@/lib/firestore";
 import { fetchSignedDownloadUrl } from "@/lib/download-client";
+import { toast } from "@/lib/toast";
 import { BOT_RISK_COLOR, BOT_STATUS_CONFIG } from "@/lib/bot-display";
 
 type DashboardBotRowProps = {
@@ -32,8 +33,9 @@ export default function DashboardBotRow({ bot, canDownload, userPlatform }: Dash
       a.href = url;
       a.download = bot.fileKey.split("/").pop() ?? "ea-file";
       a.click();
+      toast.success("Download started.");
     } catch {
-      alert("Download failed. Please contact support.");
+      toast.error("Download failed. Please contact support.");
     } finally {
       setDownloading(false);
     }

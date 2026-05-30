@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Key, Copy, Check, ShieldCheck, Monitor, ArrowRight } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { toast } from "@/lib/toast";
 import ContentHeading from "@/components/shared/ContentHeading";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 import DashboardSubscriptionAlerts from "@/components/dashboard/DashboardSubscriptionAlerts";
@@ -18,9 +19,10 @@ export default function DashboardLicense() {
     try {
       await navigator.clipboard.writeText(subscription.licenseKey);
       setCopied(true);
+      toast.success("License key copied.");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* ignore */
+      toast.error("Could not copy license key.");
     }
   };
 

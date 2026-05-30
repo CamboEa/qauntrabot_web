@@ -11,12 +11,16 @@ import {
   Server,
   TrendingDown,
   LineChart,
+  Pencil,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { formatRelativeTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/format-money";
+import { normalizeMtAccountNumber } from "@/lib/mt-account";
+import { updateMyProfile } from "@/lib/user-client";
 import DashboardSectionHead from "@/components/dashboard/DashboardSectionHead";
 import DashboardBlock from "@/components/dashboard/DashboardBlock";
 import DashboardCard from "@/components/dashboard/DashboardCard";
@@ -25,10 +29,14 @@ import BalanceGrowthChart from "@/components/dashboard/BalanceGrowthChart";
 import BotLiveSituation from "@/components/dashboard/BotLiveSituation";
 import AttachedChartBadge from "@/components/dashboard/AttachedChartBadge";
 import { formatSymbolTimeframe } from "@/lib/chart-context";
+import { toast } from "@/lib/toast";
 import ContentHeading from "@/components/shared/ContentHeading";
 
+const PLATFORMS = ["MetaTrader 5 (MT5)", "MetaTrader 4 (MT4)"] as const;
+type PlatformOption = (typeof PLATFORMS)[number];
+
 export default function DashboardTradingAccount() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const {
     subscription,
     loading,
@@ -40,6 +48,10 @@ export default function DashboardTradingAccount() {
   } = useDashboard();
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draftPlatform, setDraftPlatform] = useState<PlatformOption>(PLATFORMS[0]);
+  const [draftMtAccount, setDraftMtAccount] = useState("");
 
   const mtAccount = mtAccountNumber;
   const hasProfileOnly = !subscription?.mtAccountNumber && Boolean(profile?.mtAccountNumber);
@@ -47,14 +59,66 @@ export default function DashboardTradingAccount() {
   const history = tradingSnapshot?.balanceHistory ?? [];
   const maxFloatingLoss = tradingSnapshot?.maxFloatingLoss;
 
+  useEffect(() => {
+    if (editing) return;
+    setDraftPlatform(
+      PLATFORMS.includes(platform as PlatformOption)
+        ? (platform as PlatformOption)
+        : PLATFORMS[0],
+    );
+    setDraftMtAccount(mtAccount);
+  }, [editing, platform, mtAccount]);
+
+  const startEditing = () => {
+    setDraftPlatform(
+      PLATFORMS.includes(platform as PlatformOption)
+        ? (platform as PlatformOption)
+        : PLATFORMS[0],
+    );
+    setDraftMtAccount(mtAccount);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+  };
+
+  const handleSaveAccount = async () => {
+    const mtAccountNumber = normalizeMtAccountNumber(draftMtAccount);
+    if (!mtAccountNumber) {
+      toast.warning("Enter your MT account number.");
+      return;
+    }
+    if (mtAccountNumber.length < 4 || mtAccountNumber.length > 15) {
+      toast.warning("MT account must be 4–15 digits.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateMyProfile({
+        platform: draftPlatform,
+        mtAccountNumber,
+      });
+      await Promise.all([refreshProfile(), refresh()]);
+      toast.success("Trading account updated.");
+      setEditing(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save changes.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCopyAccount = async () => {
     if (!mtAccount) return;
     try {
       await navigator.clipboard.writeText(mtAccount);
       setCopied(true);
+      toast.success("Account number copied.");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* ignore */
+      toast.error("Could not copy account number.");
     }
   };
 
@@ -198,19 +262,19 @@ export default function DashboardTradingAccount() {
             )}
           </DashboardBlock>
 
-          {mtAccount ? (
+          {mtAccount || editing ? (
             <DashboardCard variant="accent">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <ContentHeading icon={Monitor} as="h3">
                   Linked trading account
                 </ContentHeading>
                 <div className="flex flex-wrap gap-2">
-                  {hasProfileOnly && (
+                  {!editing && hasProfileOnly && (
                     <span className="inline-flex items-center text-xs font-data text-muted-foreground px-2 py-1 rounded-full bg-secondary border border-border">
                       Registered at sign-up
                     </span>
                   )}
-                  {active && (
+                  {active && !editing && (
                     <span className="inline-flex items-center gap-1 text-xs font-data text-profit px-2 py-1 rounded-full bg-profit/10 border border-profit/20">
                       <ShieldCheck size={12} />
                       Licensed
@@ -219,43 +283,120 @@ export default function DashboardTradingAccount() {
                 </div>
               </div>
 
-              <div className="text-center sm:text-left py-2">
-                <p className="stat-label normal-case mb-2">MT account number</p>
-                <p className="font-data text-2xl sm:text-3xl font-bold text-foreground tracking-tight break-all">
-                  {mtAccount}
-                </p>
-                <button
-                  type="button"
-                  onClick={handleCopyAccount}
-                  className="btn-outline-brand text-xs w-fit mx-auto sm:mx-0 mt-4 cursor-pointer"
-                >
-                  {copied ? <Check size={14} className="text-profit" /> : <Copy size={14} />}
-                  {copied ? "Copied" : "Copy account number"}
-                </button>
-              </div>
+              {editing ? (
+                <div className="stack-4 pt-2">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Your license is locked to this MT login. Use the same account you run the EA on.
+                  </p>
+                  <div className="stack-2">
+                    <label className="field-label">Platform</label>
+                    <select
+                      value={draftPlatform}
+                      onChange={(e) => setDraftPlatform(e.target.value as PlatformOption)}
+                      className="input-field cursor-pointer"
+                      disabled={saving}
+                    >
+                      {PLATFORMS.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="stack-2">
+                    <label className="field-label">MT account number</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={draftMtAccount}
+                      onChange={(e) =>
+                        setDraftMtAccount(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="e.g. 12345678"
+                      className="input-field font-data text-lg"
+                      disabled={saving}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveAccount}
+                      disabled={saving}
+                      className="btn-primary-brand text-sm cursor-pointer disabled:opacity-50"
+                    >
+                      {saving ? "Saving…" : "Save changes"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditing}
+                      disabled={saving}
+                      className="btn-outline-brand text-sm cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                    >
+                      <X size={14} />
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center sm:text-left py-2">
+                    <p className="stat-label normal-case mb-2">MT account number</p>
+                    <p className="font-data text-2xl sm:text-3xl font-bold text-foreground tracking-tight break-all">
+                      {mtAccount}
+                    </p>
+                    <div className="flex flex-wrap gap-3 mt-4 justify-center sm:justify-start">
+                      <button
+                        type="button"
+                        onClick={handleCopyAccount}
+                        className="btn-outline-brand text-xs cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        {copied ? <Check size={14} className="text-profit" /> : <Copy size={14} />}
+                        {copied ? "Copied" : "Copy account number"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={startEditing}
+                        className="btn-outline-brand text-xs cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <Pencil size={14} />
+                        Edit account
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="dashboard-meta-grid">
-                <DashboardMetaItem label="Platform" value={platform} />
-                <DashboardMetaItem
-                  label="Attached chart"
-                  value={
-                    tradingSnapshot?.botStatus
-                      ? formatSymbolTimeframe(
-                          tradingSnapshot.botStatus.symbol,
-                          tradingSnapshot.botStatus.timeframe,
-                        )
-                      : "—"
-                  }
-                  mono
-                />
-              </div>
+                  <div className="dashboard-meta-grid">
+                    <DashboardMetaItem label="Platform" value={platform} />
+                    <DashboardMetaItem
+                      label="Attached chart"
+                      value={
+                        tradingSnapshot?.botStatus
+                          ? formatSymbolTimeframe(
+                              tradingSnapshot.botStatus.symbol,
+                              tradingSnapshot.botStatus.timeframe,
+                            )
+                          : "—"
+                      }
+                      mono
+                    />
+                  </div>
+                </>
+              )}
             </DashboardCard>
           ) : (
             <DashboardCard variant="soft">
               <p className="text-sm text-muted-foreground flex items-start gap-2">
                 <LineChart size={16} className="text-primary shrink-0 mt-0.5" />
-                No trading account on file. Add your MT login when registering, or contact support.
+                No trading account on file yet. Add your MT login to link your license.
               </p>
+              <button
+                type="button"
+                onClick={startEditing}
+                className="btn-primary-brand text-sm w-fit mt-4 cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Pencil size={14} />
+                Add MT account
+              </button>
             </DashboardCard>
           )}
         </>

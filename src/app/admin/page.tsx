@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bot, Users, CreditCard, ArrowRight } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { adminJson } from "@/lib/admin-client";
+import { toast } from "@/lib/toast";
 
 type Stats = {
   bots: { total: number; live: number };
@@ -20,12 +21,11 @@ type Stats = {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     adminJson<Stats>("/api/admin/stats")
       .then(setStats)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Failed to load"));
   }, []);
 
   const cards = stats
@@ -59,12 +59,6 @@ export default function AdminDashboardPage() {
       title="Dashboard"
       description="Overview of bots, users, and subscriptions."
     >
-      {error && (
-        <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">
-          {error}
-        </div>
-      )}
-
       <div className="grid sm:grid-cols-3 grid-site">
         {cards.map(({ label, value, sub, href, icon: Icon }) => (
           <Link
@@ -87,7 +81,7 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      {!stats && !error && (
+      {!stats && (
         <p className="text-sm text-muted-foreground font-data">Loading stats…</p>
       )}
 

@@ -7,20 +7,20 @@ import { ArrowLeft } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import BotWizard, { botToFormData } from "@/components/admin/BotWizard";
 import { adminJson } from "@/lib/admin-client";
+import { toast } from "@/lib/toast";
 import type { BotDoc } from "@/lib/firestore";
 
 export default function EditBotPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [bot, setBot] = useState<BotDoc | null>(null);
 
   useEffect(() => {
     if (!id) return;
     adminJson<BotDoc>(`/api/admin/bots/${id}`)
       .then(setBot)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load bot"))
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Failed to load bot"))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -40,12 +40,7 @@ export default function EditBotPage() {
       {loading && (
         <p className="text-sm text-muted-foreground font-data">Loading bot…</p>
       )}
-      {error && (
-        <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">
-          {error}
-        </div>
-      )}
-      {!loading && !error && bot && form && (
+      {!loading && bot && form && (
         <BotWizard
           mode="edit"
           editingId={id}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, DollarSign, LogOut, X, Menu, Bot } from "lucide-react";
+import { LogOut, X, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { signOut } from "@/lib/auth";
@@ -95,28 +95,6 @@ export default function DashboardSidebar({ mobileOpen, onMobileClose }: Dashboar
               </li>
             );
           })}
-        </ul>
-
-        <p className="dashboard-sidebar-group-label">Site</p>
-        <ul className="flex flex-col gap-0.5">
-          <li>
-            <Link href="/bots" onClick={onMobileClose} className="dashboard-sidebar-link">
-              <Bot size={16} className="shrink-0" />
-              Browse bots
-            </Link>
-          </li>
-          <li>
-            <Link href="/pricing" onClick={onMobileClose} className="dashboard-sidebar-link">
-              <DollarSign size={16} className="shrink-0" />
-              Pricing
-            </Link>
-          </li>
-          <li>
-            <Link href="/" onClick={onMobileClose} className="dashboard-sidebar-link">
-              <Home size={16} className="shrink-0" />
-              Back to site
-            </Link>
-          </li>
         </ul>
       </nav>
 

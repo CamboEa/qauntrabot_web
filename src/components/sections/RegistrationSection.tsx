@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { signUp, signIn, resetPassword } from "@/lib/auth";
 import { isValidMtAccountNumber, normalizeMtAccountNumber } from "@/lib/mt-account";
+import { toast } from "@/lib/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
@@ -26,7 +27,6 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
     mtAccountNumber: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -58,13 +58,12 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     try {
       if (mode === "register") {
         const mtAccountNumber = normalizeMtAccountNumber(form.mtAccountNumber);
         if (!isValidMtAccountNumber(mtAccountNumber)) {
-          setError("Enter a valid trading account number (4–15 digits).");
+          toast.warning("Enter a valid trading account number (4–15 digits).");
           setLoading(false);
           return;
         }
@@ -72,13 +71,14 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
       } else {
         await signIn(form.email, form.password);
       }
+      toast.success(mode === "register" ? "Account created successfully." : "Signed in successfully.");
       setSubmitted(true);
       setTimeout(() => {
         const next = new URLSearchParams(window.location.search).get("next");
         router.push(next?.startsWith("/") ? next : "/dashboard");
       }, 1500);
     } catch (err: unknown) {
-      setError(friendlyError(err instanceof Error ? err.message : "Something went wrong"));
+      toast.error(friendlyError(err instanceof Error ? err.message : "Something went wrong"));
     } finally {
       setLoading(false);
     }
@@ -86,16 +86,16 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
 
   const handleResetPassword = async () => {
     if (!form.email) {
-      setError("Enter your email address first.");
+      toast.warning("Enter your email address first.");
       return;
     }
     setLoading(true);
     try {
       await resetPassword(form.email);
       setResetSent(true);
-      setError(null);
+      toast.success("Password reset email sent — check your inbox.");
     } catch {
-      setError("Could not send reset email. Check the address and try again.");
+      toast.error("Could not send reset email. Check the address and try again.");
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
                     <button
                       key={m}
                       type="button"
-                      onClick={() => { setMode(m); setError(null); setResetSent(false); }}
+                      onClick={() => { setMode(m); setResetSent(false); }}
                       className={`flex-1 cursor-pointer ${mode === m ? "tab-pill-active" : ""}`}
                     >
                       {m === "register" ? "Create account" : "Sign in"}
@@ -149,16 +149,10 @@ export default function RegistrationSection({ hideHeader = false }: { hideHeader
               </div>
 
               <form onSubmit={handleSubmit} className="card-pad pt-0 stack-4">
-                {error && (
-                  <div className="alert-error">
-                    <AlertCircle size={16} className="shrink-0" />
-                    <p>{error}</p>
-                  </div>
-                )}
-                {resetSent && (
-                  <div className="alert-success">
-                    Password reset email sent — check your inbox.
-                  </div>
+                {resetSent && mode === "login" && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Check your inbox for the reset link.
+                  </p>
                 )}
 
                 <div className="stack-2">

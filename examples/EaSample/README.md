@@ -6,9 +6,18 @@ Sample EA wired to the production license API on [www.quantrabot.com](https://ww
 
 | File | Role |
 |------|------|
-| `SuperFiveCentBot.mq5` | **Only file you need** — strategy + license code built in |
+| `SuperFiveCentBot.mq5` | XAU / forex grid — Friday close + weekend pause + session filter |
+| `SuperFiveCentBotBTC.mq5` | **BTC / crypto 24/7** — no Fri/weekend close; opens BUY+SELL L1 together; trend filter off by default |
 
 Copy into `MQL5/Experts/` (or your `QuntraEa.mq5` after merging the license block) and **Compile** in MetaEditor → produces `.ex5`.
+
+### SuperFiveCentBotBTC (BTCUSD, etc.)
+
+- No Friday shutdown, no weekend pause, no daily market-close filter
+- `UseTrendFilter = false` by default — grid trades both directions
+- With no open positions, places **BUY L1 and SELL L1** on the same tick (hedged grid start)
+- Default `MagicNumber = 20240201` (different from the XAU EA so both can run on one account)
+- Tune `GridStep` for your broker’s BTC point size (default `800`)
 
 ## Production setup
 

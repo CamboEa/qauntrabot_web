@@ -5,18 +5,18 @@ import Link from "next/link";
 import { Plus, Pencil, Trash2, ShieldCheck } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { adminJson } from "@/lib/admin-client";
+import { toast } from "@/lib/toast";
 import type { BotDoc } from "@/lib/firestore";
 
 export default function AdminBotsPage() {
   const [bots, setBots] = useState<BotDoc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
     adminJson<BotDoc[]>("/api/admin/bots")
       .then(setBots)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
   };
 
@@ -28,9 +28,10 @@ export default function AdminBotsPage() {
     if (!confirm(`Delete bot "${id}"?`)) return;
     try {
       await adminJson(`/api/admin/bots/${id}`, { method: "DELETE" });
+      toast.success("Bot deleted.");
       load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Delete failed");
     }
   };
 
@@ -51,10 +52,6 @@ export default function AdminBotsPage() {
         </Link>
       }
     >
-      {error && (
-        <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">{error}</div>
-      )}
-
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

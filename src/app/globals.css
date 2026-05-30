@@ -1810,4 +1810,35 @@
     .card-surface-hover:hover { transform: none; }
     .btn-primary-brand:active { transform: none; }
   }
+
+  /* react-toastify — match site theme */
+  .qauntra-toast-container {
+    --toastify-font-family: var(--font-dm-sans), system-ui, sans-serif;
+    --toastify-toast-width: min(22rem, calc(100vw - 2rem));
+    z-index: 9999;
+  }
+
+  .qauntra-toast {
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 40px color-mix(in srgb, var(--primary) 18%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .Toastify__toast-theme--colored.Toastify__toast--success {
+    background: color-mix(in srgb, var(--profit) 92%, var(--primary));
+  }
+
+  .Toastify__toast-theme--colored.Toastify__toast--error {
+    background: color-mix(in srgb, var(--loss) 92%, var(--primary));
+  }
+
+  .Toastify__toast-theme--colored.Toastify__toast--warning {
+    background: color-mix(in srgb, var(--warning) 88%, var(--primary));
+    color: var(--foreground);
+  }
+
+  .Toastify__toast-theme--colored.Toastify__toast--info {
+    background: var(--primary);
+  }
 }

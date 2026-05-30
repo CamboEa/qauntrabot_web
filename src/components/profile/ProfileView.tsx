@@ -21,6 +21,7 @@ import { getUserSubscription, type Subscription } from "@/lib/firestore";
 import { signOut } from "@/lib/auth";
 import { BILLING_PERIOD_LABEL, isSubscriptionActive } from "@/lib/subscription-plans";
 import { formatDisplayDate } from "@/lib/dates";
+import { toast } from "@/lib/toast";
 import PageSection from "@/components/shared/PageSection";
 import ContentHeading from "@/components/shared/ContentHeading";
 
@@ -48,9 +49,10 @@ export default function ProfileView() {
     try {
       await navigator.clipboard.writeText(subscription.licenseKey);
       setCopied(true);
+      toast.success("License key copied.");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* ignore */
+      toast.error("Could not copy license key.");
     }
   };
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "@/lib/auth";
+import { toast } from "@/lib/toast";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,14 +16,15 @@ function LoginForm() {
   const isAdmin = useIsAdmin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(
-    searchParams.get("error") === "forbidden"
-      ? "This account does not have admin access."
-      : null
-  );
   const [submitting, setSubmitting] = useState(false);
 
   const redirecting = !loading && !!user && isAdmin;
+
+  useEffect(() => {
+    if (searchParams.get("error") === "forbidden") {
+      toast.error("This account does not have admin access.");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (redirecting) router.replace("/admin");
@@ -30,13 +32,12 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSubmitting(true);
     try {
       await signIn(email, password);
       // Redirect happens in useEffect once auth state updates
     } catch {
-      setError("Invalid email or password.");
+      toast.error("Invalid email or password.");
     } finally {
       setSubmitting(false);
     }
@@ -60,12 +61,6 @@ function LoginForm() {
             Restricted to authorized administrators only.
           </p>
         </div>
-
-        {error && (
-          <div className="rounded-xl border border-loss/25 bg-loss/5 px-4 py-3 text-sm text-loss">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="stack-4">
           <div className="stack-2">
