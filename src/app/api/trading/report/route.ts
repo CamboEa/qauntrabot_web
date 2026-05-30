@@ -59,7 +59,20 @@ export async function POST(req: NextRequest) {
     }
 
     const maxFloatingLoss = Number(body.maxFloatingLoss);
-    const botStatus = body.botStatus ? parseBotRuntimeStatus(body.botStatus) : null;
+    const botStatusProvided = body.botStatus !== undefined && body.botStatus !== null;
+    const botStatus = botStatusProvided ? parseBotRuntimeStatus(body.botStatus) : undefined;
+    if (botStatusProvided && !botStatus) {
+      console.warn("[trading/report] botStatus parse failed", {
+        botName:
+          body.botStatus && typeof body.botStatus === "object"
+            ? (body.botStatus as Record<string, unknown>).botName
+            : undefined,
+        symbol:
+          body.botStatus && typeof body.botStatus === "object"
+            ? (body.botStatus as Record<string, unknown>).symbol
+            : undefined,
+      });
+    }
     await updateTradingSnapshot(subscription!.uid, {
       balance,
       equity,
@@ -67,7 +80,7 @@ export async function POST(req: NextRequest) {
       currency: (body.currency ?? "USD").trim().slice(0, 8) || "USD",
       server: body.server?.trim().slice(0, 120),
       maxFloatingLoss: Number.isFinite(maxFloatingLoss) ? maxFloatingLoss : undefined,
-      botStatus: botStatus ?? undefined,
+      botStatus: botStatusProvided ? (botStatus ?? null) : undefined,
     });
 
     return NextResponse.json({ ok: true });

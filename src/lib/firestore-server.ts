@@ -195,7 +195,8 @@ export async function updateTradingSnapshot(
   const balanceHistory = appendBalanceHistory(prev?.balanceHistory ?? [], snapshot.balance);
   const maxFloatingLoss = mergeMaxFloatingLoss(prev?.maxFloatingLoss, snapshot.maxFloatingLoss);
 
-  const botStatus = snapshot.botStatus ?? prev?.botStatus ?? null;
+  const botStatus =
+    snapshot.botStatus !== undefined ? snapshot.botStatus : (prev?.botStatus ?? null);
 
   if (
     prev &&

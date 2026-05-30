@@ -17,6 +17,7 @@ static double   g_qb_lastBal = -1.0;
 static double   g_qb_lastEq = -1.0;
 static double   g_qb_lastProfit = -1.0;
 static string   g_qb_lastBotStatusSent = "";
+static datetime g_qb_lastPushFailLog = 0;
 
 bool QauntraBotParseValid(const string body)
 {
@@ -291,7 +292,8 @@ bool QauntraBotPushTradingStats(const string licenseKey, const string botStatusJ
 
    string json = StringFormat(
       "{\"licenseKey\":\"%s\",\"account\":\"%s\",\"balance\":%.2f,\"equity\":%.2f,\"profit\":%.2f,\"maxFloatingLoss\":%.2f,\"currency\":\"%s\",\"server\":\"%s\",\"botStatus\":%s}",
-      key, accountStr, balance, equity, profit, g_maxFloatingLossAll, currency, server, botStatusJson
+      QauntraBotJsonEscape(key), accountStr, balance, equity, profit, g_maxFloatingLossAll,
+      QauntraBotJsonEscape(currency), QauntraBotJsonEscape(server), botStatusJson
    );
 
    char post[];
@@ -311,6 +313,18 @@ bool QauntraBotPushTradingStats(const string licenseKey, const string botStatusJ
       g_qb_lastEq = equity;
       g_qb_lastProfit = profit;
       return true;
+   }
+
+   datetime now = TimeCurrent();
+   if(now - g_qb_lastPushFailLog >= 30)
+   {
+      g_qb_lastPushFailLog = now;
+      string body = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+      if(StringLen(body) > 200) body = StringSubstr(body, 0, 200) + "...";
+      Print("QauntraBot: sync push FAILED | HTTP ", code,
+            " | err=", GetLastError(),
+            " | body=", body,
+            " | Check: InpLicenseKey, MT account match, WebRequest URL allowlist.");
    }
    return false;
 }
@@ -924,7 +938,12 @@ int OnInit()
 
    if(g_showDashboard) CreateDashboard();
    if(InpRequireLicense && InpStreamTimerMs > 0)
-      EventSetMillisecondTimer(InpStreamTimerMs);
+   {
+      if(!EventSetMillisecondTimer(InpStreamTimerMs))
+         Print("QauntraBot: WARNING — stream timer failed (update MT5 build or set InpStreamTimerMs=0). Sync uses OnTick only.");
+      else
+         Print("QauntraBot: live stream timer ", InpStreamTimerMs, "ms | bot=SuperFiveCentBot | symbol=", _Symbol);
+   }
    return INIT_SUCCEEDED;
 }
 

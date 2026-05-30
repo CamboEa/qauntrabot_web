@@ -20,15 +20,25 @@ function numOrNull(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function boolField(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0 || value === null || value === undefined) return false;
+  if (typeof value === "string") {
+    const s = value.trim().toLowerCase();
+    return s === "true" || s === "1" || s === "yes";
+  }
+  return Boolean(value);
+}
+
 export function parseBotRuntimeStatus(data: unknown): BotRuntimeStatus | null {
   if (!data || typeof data !== "object") return null;
   const s = data as Record<string, unknown>;
-  const symbol = typeof s.symbol === "string" ? s.symbol : "";
-  if (!symbol) return null;
+  const symbolRaw = typeof s.symbol === "string" ? s.symbol.trim() : "";
+  if (!symbolRaw) return null;
 
   return {
     botName: typeof s.botName === "string" ? s.botName : undefined,
-    symbol,
+    symbol: symbolRaw,
     timeframe: typeof s.timeframe === "string" ? s.timeframe : undefined,
     serverTime: typeof s.serverTime === "string" ? s.serverTime : undefined,
     todayPnl: Number(s.todayPnl) || 0,
@@ -54,10 +64,10 @@ export function parseBotRuntimeStatus(data: unknown): BotRuntimeStatus | null {
     sellAvgEntry: numOrNull(s.sellAvgEntry),
     buyPnl: Number(s.buyPnl) || 0,
     sellPnl: Number(s.sellPnl) || 0,
-    buySlArmed: Boolean(s.buySlArmed),
-    sellSlArmed: Boolean(s.sellSlArmed),
-    buyHedgeOverride: Boolean(s.buyHedgeOverride),
-    sellHedgeOverride: Boolean(s.sellHedgeOverride),
+    buySlArmed: boolField(s.buySlArmed),
+    sellSlArmed: boolField(s.sellSlArmed),
+    buyHedgeOverride: boolField(s.buyHedgeOverride),
+    sellHedgeOverride: boolField(s.sellHedgeOverride),
     syncTs: s.syncTs !== undefined ? Number(s.syncTs) || undefined : undefined,
   };
 }

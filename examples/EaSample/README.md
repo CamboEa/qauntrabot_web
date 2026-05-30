@@ -27,6 +27,8 @@ Recompile and re-attach after pulling updates. The web dashboard polls + Firesto
 - Default `MagicNumber = 20240201` (different from the XAU EA so both can run on one account)
 - Tune `GridStep` for your broker’s BTC point size (default `800`)
 
+**Dashboard sync:** only one EA should push live stats per MT account at a time. If both XAU and BTC EAs run on the same login, the last upload wins and the dashboard can look stuck on the other bot. Remove the XAU EA from the chart when testing BTC, recompile `SuperFiveCentBotBTC.mq5` in MetaEditor after updates, and paste **InpLicenseKey** again in EA inputs (each attachment has its own inputs). Experts log should show `QauntraBot: live stream timer … | bot=SuperFiveCentBotBTC`.
+
 ## Production setup
 
 1. **Dashboard → License** — copy your license key (`QB-…`).
