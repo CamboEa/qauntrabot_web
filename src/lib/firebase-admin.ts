@@ -34,6 +34,7 @@ export function getAdminFirestore(): Firestore {
   const existing = getApps()[0];
   if (existing) {
     db = getFirestore(existing);
+    db.settings({ ignoreUndefinedProperties: true });
     return db;
   }
 
@@ -52,5 +53,7 @@ export function getAdminFirestore(): Firestore {
   });
 
   db = getFirestore(app);
+  // EA botStatus omits optional fields (undefined) — Firestore rejects those otherwise.
+  db.settings({ ignoreUndefinedProperties: true });
   return db;
 }

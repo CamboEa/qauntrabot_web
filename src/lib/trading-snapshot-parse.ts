@@ -68,7 +68,10 @@ export function parseBotRuntimeStatus(data: unknown): BotRuntimeStatus | null {
     sellSlArmed: boolField(s.sellSlArmed),
     buyHedgeOverride: boolField(s.buyHedgeOverride),
     sellHedgeOverride: boolField(s.sellHedgeOverride),
-    syncTs: s.syncTs !== undefined ? Number(s.syncTs) || undefined : undefined,
+    syncTs:
+      s.syncTs !== undefined && Number.isFinite(Number(s.syncTs))
+        ? Number(s.syncTs)
+        : undefined,
   };
 }
 
