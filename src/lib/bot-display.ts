@@ -63,3 +63,11 @@ export function serializeBot(bot: BotDoc): SerializableBot {
     updatedAt: bot.updatedAt instanceof Date ? bot.updatedAt.toISOString() : String(bot.updatedAt),
   };
 }
+
+export function deserializeBot(bot: SerializableBot): BotDoc {
+  return {
+    ...bot,
+    createdAt: new Date(bot.createdAt),
+    updatedAt: new Date(bot.updatedAt),
+  };
+}

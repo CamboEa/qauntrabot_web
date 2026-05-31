@@ -14,6 +14,7 @@ export default function FAQsPage() {
     <>
       <FaqPageJsonLd />
     <PageWrapper
+      authNav={false}
       hero={{
         eyebrow: "Support",
         title: "Frequently asked",

@@ -1,5 +1,6 @@
 import PageWrapper from "@/components/layout/PageWrapper";
 import BotsSection from "@/components/sections/BotsSection";
+import { getCachedBots } from "@/lib/cached-bots";
 import { createPageMetadata } from "@/lib/seo";
 import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
 
@@ -9,7 +10,9 @@ export const metadata = createPageMetadata({
   path: "/bots",
 });
 
-export default function BotsPage() {
+export default async function BotsPage() {
+  const initialBots = await getCachedBots();
+
   return (
     <PageWrapper
       hero={{
@@ -23,7 +26,7 @@ export default function BotsPage() {
           : {}),
       }}
     >
-      <BotsSection hideHeader />
+      <BotsSection hideHeader initialBots={initialBots} />
     </PageWrapper>
   );
 }

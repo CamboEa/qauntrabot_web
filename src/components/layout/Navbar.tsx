@@ -4,8 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import StaticAuthLinks from "./StaticAuthLinks";
 import UserNavMenu from "./UserNavMenu";
 import { SHOW_LIVE_RESULTS_PAGE } from "@/lib/site-config";
+
+type NavbarProps = {
+  /** When false, skip Firebase auth in the nav (marketing pages). */
+  authNav?: boolean;
+};
 
 const NAV_LINKS = [
   { label: "Bots", href: "/bots" },
@@ -15,7 +21,7 @@ const NAV_LINKS = [
   { label: "FAQs", href: "/faqs" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ authNav = true }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -77,7 +83,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
-            <UserNavMenu />
+            {authNav ? <UserNavMenu /> : <StaticAuthLinks />}
           </div>
 
           <button
@@ -115,7 +121,7 @@ export default function Navbar() {
                 );
               })}
               <div className="mt-4 pt-4 border-t border-border">
-                <UserNavMenu mobile />
+                {authNav ? <UserNavMenu mobile /> : <StaticAuthLinks mobile />}
               </div>
             </div>
           </div>

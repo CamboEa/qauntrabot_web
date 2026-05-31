@@ -9,6 +9,7 @@ import type { TradingSnapshot } from "@/lib/firestore";
 export function subscribeTradingSnapshot(
   uid: string,
   onUpdate: (snapshot: TradingSnapshot | null) => void,
+  onError?: () => void,
 ): Unsubscribe {
   return onSnapshot(
     doc(db, "users", uid),
@@ -21,7 +22,7 @@ export function subscribeTradingSnapshot(
     },
     (err) => {
       console.error("[trading-snapshot] Firestore listener error:", err);
-      onUpdate(null);
+      onError?.();
     },
   );
 }

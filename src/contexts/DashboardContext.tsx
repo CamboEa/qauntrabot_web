@@ -19,7 +19,7 @@ import {
 } from "@/lib/firestore";
 import { subscribeTradingSnapshot } from "@/lib/trading-snapshot-listener";
 import { fetchTradingSnapshot, mergeTradingSnapshot } from "@/lib/trading-snapshot-client";
-import { TRADING_STREAM_POLL_MS } from "@/lib/trading-stream";
+import { TRADING_STREAM_FALLBACK_POLL_MS } from "@/lib/trading-stream";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
 import { resolveMtAccountNumber } from "@/lib/mt-account";
 
@@ -45,6 +45,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [bots, setBots] = useState<BotDoc[]>([]);
   const [tradingSnapshot, setTradingSnapshot] = useState<TradingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [listenerFailed, setListenerFailed] = useState(false);
 
   const applySnapshot = useCallback((incoming: TradingSnapshot | null) => {
     setTradingSnapshot((prev) => mergeTradingSnapshot(prev, incoming));
@@ -89,13 +90,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       setTradingSnapshot(null);
+      setListenerFailed(false);
       return;
     }
-    return subscribeTradingSnapshot(user.uid, applySnapshot);
+    setListenerFailed(false);
+    return subscribeTradingSnapshot(user.uid, applySnapshot, () => setListenerFailed(true));
   }, [user, applySnapshot]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !listenerFailed) return;
 
     let cancelled = false;
 
@@ -106,12 +109,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     };
 
     poll();
-    const id = window.setInterval(poll, TRADING_STREAM_POLL_MS);
+    const id = window.setInterval(poll, TRADING_STREAM_FALLBACK_POLL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [user, applySnapshot]);
+  }, [user, applySnapshot, listenerFailed]);
 
   const active = subscription
     ? isSubscriptionActive(subscription.validUntil, subscription.status)

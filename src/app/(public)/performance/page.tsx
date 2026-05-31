@@ -17,6 +17,7 @@ export default function PerformancePage() {
 
   return (
     <PageWrapper
+      authNav={false}
       hero={{
         eyebrow: "Verified Data",
         title: "Live",

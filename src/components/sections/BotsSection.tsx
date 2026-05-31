@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAllBots, getUserSubscription, type BotDoc } from "@/lib/firestore";
+import { getUserSubscription, type BotDoc } from "@/lib/firestore";
+import { deserializeBot, type SerializableBot } from "@/lib/bot-display";
 import { isSubscriptionActive } from "@/lib/subscription-plans";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionHeader from "@/components/shared/SectionHeader";
@@ -12,20 +13,31 @@ import { toast } from "@/lib/toast";
 
 type Filter = "all" | "live" | "beta" | "soon";
 
-export default function BotsSection({ hideHeader = false }: { hideHeader?: boolean }) {
+type BotsSectionProps = {
+  hideHeader?: boolean;
+  initialBots?: SerializableBot[];
+};
+
+export default function BotsSection({ hideHeader = false, initialBots }: BotsSectionProps) {
   const { user } = useAuth();
   const [filter, setFilter] = useState<Filter>("all");
-  const [bots, setBots] = useState<BotDoc[]>([]);
-  const [loadingBots, setLoadingBots] = useState(true);
+  const [bots, setBots] = useState<BotDoc[]>(() =>
+    initialBots?.map(deserializeBot) ?? [],
+  );
+  const [loadingBots, setLoadingBots] = useState(initialBots === undefined);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
-    getAllBots()
-      .then(setBots)
+    if (initialBots?.length) return;
+    fetch("/api/bots")
+      .then((r) => r.json())
+      .then((data: SerializableBot[]) => {
+        if (Array.isArray(data)) setBots(data.map(deserializeBot));
+      })
       .catch(() => setBots([]))
       .finally(() => setLoadingBots(false));
-  }, []);
+  }, [initialBots]);
 
   useEffect(() => {
     if (!user) {

@@ -23,12 +23,12 @@ const PROOF_POINTS = [
 
 const LIVE_PHONES = [
   {
-    src: "/asset/tradingScreen.png",
+    src: "/asset/tradingScreen.webp",
     alt: "MT5 mobile deal history showing XAUUSD trades and approximately 10% account growth in one week",
     label: "Deal history",
   },
   {
-    src: "/asset/tradingScreen2.png",
+    src: "/asset/tradingScreen2.webp",
     alt: "MT5 mobile chart for XAUUSD on M15 timeframe with live bot trade markers",
     label: "Live chart",
   },

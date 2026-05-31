@@ -12,6 +12,7 @@ export const metadata = createPageMetadata({
 export default function FeaturesPage() {
   return (
     <PageWrapper
+      authNav={false}
       hero={{
         eyebrow: "Technical Capabilities",
         title: "Built for",

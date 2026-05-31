@@ -103,7 +103,7 @@ export default function HeroSection() {
           <div className="order-1 lg:order-2 w-full hero-card-enter hero-d-chart flex justify-center lg:justify-end lg:-me-6 xl:-me-10">
             <div className="hero-mt5-visual w-full max-w-2xl sm:max-w-3xl lg:w-[112%] lg:max-w-[44rem] xl:max-w-[52rem]">
               <Image
-                src="/asset/mt5screen.png"
+                src="/asset/mt5screen.webp"
                 alt="MetaTrader 5 platform showing XAUUSD chart, market watch, and algo trading tools"
                 width={1200}
                 height={750}

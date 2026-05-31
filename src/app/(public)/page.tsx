@@ -1,15 +1,17 @@
+import dynamic from "next/dynamic";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/sections/HeroSection";
 import WeeklyGainSection from "@/components/sections/WeeklyGainSection";
-import HomeBacktestSection from "@/components/home/HomeBacktestSection";
-import HomeExploreSection from "@/components/home/HomeExploreSection";
-import HomeCtaSection from "@/components/home/HomeCtaSection";
+
+const HomeBacktestSection = dynamic(() => import("@/components/home/HomeBacktestSection"));
+const HomeExploreSection = dynamic(() => import("@/components/home/HomeExploreSection"));
+const HomeCtaSection = dynamic(() => import("@/components/home/HomeCtaSection"));
 
 export default function Home() {
   return (
     <>
-      <Navbar />
+      <Navbar authNav={false} />
       <main className="flex-1">
         <HeroSection />
         <WeeklyGainSection />

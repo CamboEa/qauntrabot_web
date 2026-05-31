@@ -5,6 +5,7 @@ import {
   Key,
   Bot,
   BookOpen,
+  Wand2,
 } from "lucide-react";
 
 export type DashboardNavItem = {
@@ -22,6 +23,7 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
   { id: "license", label: "License key", href: "/dashboard/license", icon: Key, requiresActive: true },
   { id: "bots", label: "My bots", href: "/dashboard/bots", icon: Bot },
   { id: "setup", label: "Quick setup", href: "/dashboard/setup", icon: BookOpen, requiresActive: true },
+  { id: "create-ea", label: "Create EA", href: "/dashboard/create-ea", icon: Wand2 },
 ];
 
 export function isDashboardNavActive(pathname: string, href: string): boolean {
