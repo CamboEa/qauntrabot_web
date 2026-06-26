@@ -48,7 +48,7 @@ export default function Navbar({ authNav = true }: NavbarProps) {
       <nav
         className={`mx-auto max-w-7xl transition-all duration-300 rounded-2xl border ${
           scrolled
-            ? "bg-card/98 backdrop-blur-xl border-border shadow-[0_8px_32px_rgba(11,31,61,0.08)]"
+            ? "bg-card/98 backdrop-blur-xl border-border shadow-[0_8px_32px_rgba(20,26,58,0.08)]"
             : "bg-card/90 backdrop-blur-lg border-border/80"
         }`}
       >
@@ -57,13 +57,14 @@ export default function Navbar({ authNav = true }: NavbarProps) {
             <Image
               src="/logo/logo.png"
               alt="QauntraBot"
-              width={34}
-              height={34}
+              width={32}
+              height={32}
               className="object-contain shrink-0"
               priority
             />
-            <span className="font-display text-base sm:text-lg font-bold text-foreground tracking-tight truncate">
-              QauntraBot
+            <span className="font-display text-sm sm:text-base tracking-[0.18em] uppercase truncate">
+              <span className="font-bold text-foreground">QUANTRA</span>
+              <span className="font-medium text-muted-foreground"> BOT</span>
             </span>
           </Link>
 

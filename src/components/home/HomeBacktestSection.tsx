@@ -50,80 +50,58 @@ const BACKTEST_POINTS = [
   "Optimised for robustness across volatile and ranging market conditions",
 ];
 
-// Photo by rc.xyz NFT gallery on Unsplash (free licence)
-// Premium alternative (Unsplash+): https://plus.unsplash.com/premium_photo-1681487769650-a0c3fbaed85a?fm=jpg&q=80&w=1920&auto=format&fit=crop
-const BG_URL =
-  "https://images.unsplash.com/photo-1634542984003-e0fb8e200e91?fm=jpg&q=80&w=1920&auto=format&fit=crop";
-
-const DARK_VARS = {
-  "--foreground": "#F4F2EB",
-  "--muted-foreground": "rgba(244,242,235,0.60)",
-  "--primary": "#93C5FD",
-  "--primary-foreground": "#0B1F3D",
-  "--card": "rgba(11,31,61,0.65)",
-  "--secondary": "rgba(11,31,61,0.50)",
-  "--border": "rgba(244,242,235,0.14)",
-  "--profit": "#34d399",
-  "--background": "rgba(11,31,61,0.60)",
-} as React.CSSProperties;
-
 export default function HomeBacktestSection() {
   return (
-    <section
-      id="backtest"
-      className="min-h-dvh flex items-center section-y relative overflow-hidden bg-[#0B1F3D]"
-      style={{ backgroundImage: `url('${BG_URL}')`, backgroundSize: "cover", backgroundPosition: "center" }}
-    >
-      <div className="absolute inset-0 bg-black/65" />
-      <div className="container-site w-full relative z-10" style={DARK_VARS}>
-      <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-        <ScrollReveal variant="left" delay={60} className="order-1">
-          <ProofMediaShowcase items={BACKTEST_MEDIA} autoAdvance autoAdvanceMs={5000} />
-        </ScrollReveal>
-
-        <ScrollReveal variant="right" delay={100} className="stack-4 order-2">
-          <SectionHeader
-            eyebrow="Battle-tested strategy"
-            eyebrowDot
-            title="5 years of market"
-            accent="history. Zero guesswork."
-            description="Every bot we ship has been stress-tested across half a decade of live market data — including crashes, rallies, and everything in between."
-          />
-
-          <ul className="stack-3">
-            {BACKTEST_POINTS.map((point, i) => (
-              <ScrollReveal key={point} as="li" variant="up" delay={200 + i * 70}>
-                <span className="flex items-start gap-3 text-sm text-foreground/90 leading-relaxed">
-                  <CheckCircle2 size={18} className="text-profit shrink-0 mt-0.5" aria-hidden />
-                  {point}
-                </span>
-              </ScrollReveal>
-            ))}
-          </ul>
-
-          <div className="grid grid-cols-3 gap-3">
-            {BACKTEST_STATS.map(({ label, value, Icon }, i) => (
-              <ScrollReveal key={label} variant="up" delay={400 + i * 80}>
-                <div className="meta-cell stack-2 h-full">
-                  <div className="flex items-center gap-2">
-                    <Icon size={14} className="text-primary shrink-0" aria-hidden />
-                    <p className="stat-label normal-case tracking-normal text-[0.6rem]">{label}</p>
-                  </div>
-                  <p className="font-data text-sm font-semibold tabular-nums text-foreground">
-                    {value}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-
-          <ScrollReveal variant="fade" delay={640}>
-            <p className="text-[0.65rem] text-muted-foreground font-data leading-relaxed max-w-lg">
-              Past backtest performance does not guarantee future results. Backtest conducted with highest-quality MT5 tick data.
-            </p>
+    <section id="backtest" className="section-y section-cream">
+      <div className="container-site">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <ScrollReveal variant="left" delay={60} className="order-1">
+            <ProofMediaShowcase items={BACKTEST_MEDIA} autoAdvance autoAdvanceMs={5000} />
           </ScrollReveal>
-        </ScrollReveal>
-      </div>
+
+          <ScrollReveal variant="right" delay={100} className="stack-4 order-2">
+            <SectionHeader
+              eyebrow="Battle-tested strategy"
+              eyebrowDot
+              title="5 years of market"
+              accent="history. Zero guesswork."
+              description="Every bot we ship has been stress-tested across half a decade of live market data — including crashes, rallies, and everything in between."
+            />
+
+            <ul className="stack-3">
+              {BACKTEST_POINTS.map((point, i) => (
+                <ScrollReveal key={point} as="li" variant="up" delay={200 + i * 70}>
+                  <span className="flex items-start gap-3 text-sm text-foreground/80 leading-relaxed">
+                    <CheckCircle2 size={18} className="text-profit shrink-0 mt-0.5" aria-hidden />
+                    {point}
+                  </span>
+                </ScrollReveal>
+              ))}
+            </ul>
+
+            <div className="grid grid-cols-3 gap-3">
+              {BACKTEST_STATS.map(({ label, value, Icon }, i) => (
+                <ScrollReveal key={label} variant="up" delay={400 + i * 80}>
+                  <div className="meta-cell stack-2 h-full">
+                    <div className="flex items-center gap-2">
+                      <Icon size={14} className="text-foreground/50 shrink-0" aria-hidden />
+                      <p className="stat-label normal-case tracking-normal text-[0.6rem]">{label}</p>
+                    </div>
+                    <p className="font-data text-sm font-semibold tabular-nums text-foreground">
+                      {value}
+                    </p>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+
+            <ScrollReveal variant="fade" delay={640}>
+              <p className="text-[0.65rem] text-muted-foreground leading-relaxed max-w-lg">
+                Past backtest performance does not guarantee future results. Backtest conducted with highest-quality MT5 tick data.
+              </p>
+            </ScrollReveal>
+          </ScrollReveal>
+        </div>
       </div>
     </section>
   );

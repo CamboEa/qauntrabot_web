@@ -39,7 +39,7 @@ export default function BotCatalogCard({
       </div>
 
       <div className="flex flex-col gap-0.5 min-w-0 pr-1">
-        <h3 className="font-display text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors leading-tight">
+        <h3 className="font-display text-xl font-bold tracking-tight text-foreground group-hover:opacity-70 transition-opacity leading-tight">
           {bot.name}
         </h3>
         <p className="text-sm text-muted-foreground leading-snug">{bot.subtitle}</p>
@@ -114,7 +114,7 @@ export default function BotCatalogCard({
               type="button"
               onClick={onDownload}
               disabled={isDownloading}
-              className="p-2 rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+              className="p-2 rounded-full border border-border text-muted-foreground hover:border-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25"
               title="Download EA"
               aria-label={`Download ${bot.name} EA`}
             >

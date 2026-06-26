@@ -1,26 +1,66 @@
 import {
+  Cpu,
   Shield,
-  GitBranch,
   Zap,
-  Layers,
-  Clock,
-  BarChart3,
-  Boxes,
+  LineChart,
   Lock,
+  Bell,
+  Globe,
+  Layers,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import SectionHeader from "@/components/shared/SectionHeader";
 import PageSection from "@/components/shared/PageSection";
-import IconTile from "@/components/shared/IconTile";
 
-const FEATURES = [
-  { icon: Shield, title: "Smart Risk Management", description: "Adaptive trailing stops, auto position sizing, and configurable max drawdown caps per strategy.", tags: ["Trailing SL/TP", "Position Sizing", "Drawdown Cap"] },
-  { icon: GitBranch, title: "Market-Neutral Frameworks", description: "Grid and hedging architectures for ranging, trending, or volatile conditions with basket management.", tags: ["Grid Trading", "Hedging", "Basket Mgmt"] },
-  { icon: Zap, title: "Low-Latency Execution", description: "VPS-ready with sub-10ms latency on co-located servers. ECN-compatible with slippage control.", tags: ["VPS Ready", "ECN", "Slippage Control"] },
-  { icon: Layers, title: "Multi-Asset Coverage", description: "Gold, forex, indices, and crypto CFDs from a single EA with isolated risk per instrument.", tags: ["XAUUSD", "Forex", "Crypto"] },
-  { icon: Clock, title: "24/7 Autonomous Operation", description: "Session filters, news avoidance, and automatic Friday close protect capital around the clock.", tags: ["Session Filters", "News Block", "Auto Close"] },
-  { icon: BarChart3, title: "Advanced Analytics", description: "Live dashboards, webhook alerts, and KPI tracking via MT5 or external integrations.", tags: ["Dashboard", "Webhooks", "KPIs"] },
-  { icon: Boxes, title: "Multi-Strategy Architecture", description: "Up to 12 strategies with shared risk budgeting and portfolio-level drawdown limits.", tags: ["Portfolio", "Risk Budget", "Correlation Guard"] },
-  { icon: Lock, title: "Secure License Delivery", description: "Hardware-locked licensing, instant delivery, and full onboarding with parameter files.", tags: ["Hardware Lock", "Instant", "Setup Docs"] },
+const FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
+  {
+    icon: Cpu,
+    title: "Quant-grade EA",
+    description:
+      "MT5 expert advisor refined on years of tick data and walk-forward optimization.",
+  },
+  {
+    icon: Shield,
+    title: "Managed VPS",
+    description:
+      "Pre-configured Windows cloud host. 99.98% uptime so your bot never sleeps.",
+  },
+  {
+    icon: Zap,
+    title: "Sub-12ms latency",
+    description:
+      "Co-located with the broker for institutional-grade execution speed.",
+  },
+  {
+    icon: LineChart,
+    title: "Real-time analytics",
+    description:
+      "Live equity curve, P&L, and drawdown right inside the Quantra dashboard.",
+  },
+  {
+    icon: Lock,
+    title: "Account-bound license",
+    description:
+      "Generate a key that binds the EA to your MT5 account number.",
+  },
+  {
+    icon: Bell,
+    title: "Smart alerts",
+    description:
+      "Optional email / Telegram alerts on trades, drawdown thresholds, or VPS health.",
+  },
+  {
+    icon: Globe,
+    title: "Multi-broker ready",
+    description:
+      "Works with any MT5-compatible broker. Recommended partner unlocks the EA free.",
+  },
+  {
+    icon: Layers,
+    title: "Risk presets",
+    description:
+      "Conservative, balanced, and aggressive presets — switch with one click.",
+  },
 ];
 
 export default function FeaturesSection({ hideHeader = false }: { hideHeader?: boolean }) {
@@ -29,28 +69,30 @@ export default function FeaturesSection({ hideHeader = false }: { hideHeader?: b
       {!hideHeader && (
         <div className="headline-gap">
           <SectionHeader
-            eyebrow="Technical Capabilities"
-            title="Built for professionals."
-            accent="Engineered for edge."
-            description="Every module architected for reliability, configurability, and institutional-grade risk discipline."
+            eyebrow="Features"
+            title="Everything you need to trade"
+            accent="on autopilot."
+            description="Quantra packages a battle-tested expert advisor, a managed VPS, and a clean control panel into one subscription."
           />
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 grid-site">
-        {FEATURES.map((f) => (
-          <div key={f.title} className="card-surface-hover group card-pad flex flex-col stack-4 h-full">
-            <IconTile icon={f.icon} size={18} />
-            <div className="flex-1 stack-2">
-              <h3 className="font-display text-base font-bold text-foreground">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
-            </div>
-            <div className="flex flex-wrap gap-1.5 pt-4 border-t border-border">
-              {f.tags.map((tag) => (
-                <span key={tag} className="pair-tag">
-                  {tag}
-                </span>
-              ))}
+      <div className="features-grid">
+        {FEATURES.map(({ icon: Icon, title, description }) => (
+          <div key={title} className="features-grid-cell">
+            <Icon
+              size={22}
+              strokeWidth={1.5}
+              className="text-foreground/70 shrink-0"
+              aria-hidden
+            />
+            <div className="flex flex-col gap-2 mt-2">
+              <h3 className="font-semibold text-[0.9375rem] text-foreground leading-snug tracking-[-0.01em]">
+                {title}
+              </h3>
+              <p className="text-sm text-foreground/60 leading-relaxed">
+                {description}
+              </p>
             </div>
           </div>
         ))}
